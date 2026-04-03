@@ -1,0 +1,25 @@
+#ifndef __USART_H__
+#define __USART_H__
+
+#include "stm32g4xx_hal.h"
+#include "stdio.h"
+#include "./utils/fifofast.h"
+
+extern UART_HandleTypeDef huart2;
+extern DMA_HandleTypeDef hdma_usart2_rx; /* 声明USART2接收DMA句柄 */
+extern DMA_HandleTypeDef hdma_usart2_tx; /* 声明USART2发送DMA句柄 */
+
+#define RX_BUF_TEMP_SIZE 512     /* DMA循环接收缓冲区大小 */
+#define FIFO_UART_TX_SIZE 2048   /* FIFO发送缓冲区大小 */
+#define TX_DMA_BUF_SIZE 1024     /* DMA发送临时缓冲区大小 */
+#define FIFO_UART_RX_SIZE 512    /* FIFO接收缓冲区大小 */
+#define TX_DMA_TRIGGER_THRESH 32 /* DMA发送触发阈值*/
+
+void usart2_init(void);
+void usart2_send_data(uint8_t *data, uint16_t size);
+uint16_t usart2_read_data(uint8_t *buf, uint16_t max_size);
+
+uint16_t usart2_get_available_buffer(void);
+uint8_t usart2_fifo_is_empty(void);
+
+#endif /* __USART_H__ */
