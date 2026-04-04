@@ -9,8 +9,10 @@
 /bin
 /obj
 /out
+/芯片手册
 
 # eide template
 *.ept
 *.eide-template
 .eide/eide.yml
+

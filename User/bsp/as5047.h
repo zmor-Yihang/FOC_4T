@@ -2,7 +2,6 @@
 #define __AS5047_H__
 
 #include "stm32g4xx_hal.h"
-#include "spi.h"
 #include <math.h>
 
 /* AS5047P 寄存器地址定义 */

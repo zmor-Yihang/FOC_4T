@@ -5,13 +5,11 @@
 #include "clark_park.h"
 #include "svpwm.h"
 #include "pid.h"
-#include "bsp/as5047.h"
-#include "bsp/tim.h"
-#include "bsp/adc.h"
+#include "as5047.h"
+#include "tim.h"
+#include "adc.h"
 #include "flux_weakening.h"
-
-/* 电机参数 */
-#define U_DC 12.0f /* 直流母线电压 (V) */
+#include "main.h"
 
 /* FOC 核心控制对象 */
 typedef struct

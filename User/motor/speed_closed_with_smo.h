@@ -2,10 +2,10 @@
 #define __SPEED_CLOSED_WITH_SMO_H__
 
 #include <stdio.h>
-#include "foc/foc.h"
-#include "foc/smo.h"
-#include "bsp/as5047.h"
-#include "utils/print.h"
+#include "foc.h"
+#include "smo.h"
+#include "as5047.h"
+#include "print.h"
 
 /**
  * @brief 初始化有感速度闭环控制（同时运行SMO观测器）

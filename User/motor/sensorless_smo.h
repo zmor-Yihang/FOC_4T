@@ -2,10 +2,10 @@
 #define __SENSORLESS_SMO__H__
 
 #include <stdio.h>
-#include "foc/smo.h"
-#include "foc/foc.h"
-#include "utils/print.h"
-#include "utils/ramp.h"
+#include "smo.h"
+#include "foc.h"
+#include "print.h"
+#include "ramp.h"
 
 // 状态定义
 typedef enum

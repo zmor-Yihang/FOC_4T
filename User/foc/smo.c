@@ -1,5 +1,4 @@
 #include "smo.h"
-#include "pid.h"
 
 // 滑模控制率 - 饱和函数
 static float smo_fun(float error, float boundary)

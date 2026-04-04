@@ -2,10 +2,10 @@
 #define __SENSORLESS_LUENBERGER_H__
 
 #include <stdio.h>
-#include "foc/luenberger.h"
-#include "foc/foc.h"
-#include "utils/ramp.h"
-#include "utils/print.h"
+#include "luenberger.h"
+#include "foc.h"
+#include "ramp.h"
+#include "print.h"
 
 // 状态定义
 typedef enum

@@ -2,10 +2,8 @@
 #define __SVPWM_H__
 
 #include "clark_park.h"
-#include "./utils/fast_sin_cos.h"
-
-/* 直流母线电压 (V) */
-#define U_DC 12.0f
+#include "fast_sin_cos.h"
+#include "main.h"
 
 /**
  * @brief  SVPWM调制函数

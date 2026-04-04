@@ -1,5 +1,5 @@
 #include "print.h"
-#include "bsp/usart.h"
+#include "usart.h"
 #include <string.h>
 
 /* JustFloat 协议帧尾: 0x00, 0x00, 0x80, 0x7f */

@@ -2,10 +2,10 @@
 #define __SPEED_CLOSED_WITH_FLUX_OBSERVER_H__
 
 #include <stdio.h>
-#include "foc/foc.h"
-#include "foc/flux_observer.h"
-#include "bsp/as5047.h"
-#include "utils/print.h"
+#include "foc.h"
+#include "flux_observer.h"
+#include "as5047.h"
+#include "print.h"
 
 /**
  * @brief 初始化有感速度闭环控制

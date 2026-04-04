@@ -1,7 +1,6 @@
 #ifndef __PID__H__ 
 #define __PID__H__
 
-#include "stm32g4xx_hal.h"
 #include "math.h"
 
 /* PI控制器结构体 */

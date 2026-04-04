@@ -1,44 +1,43 @@
-#ifndef __ADC_H__
-#define __ADC_H__
+#ifndef __ADC_H
+#define __ADC_H
 
 #include "stm32g4xx_hal.h"
-#include "utils/delay.h"
+#include "delay.h"
 
-// ADC 采样值结构体
+#define ADC_REF_VOLTAGE 1.65f                                     // INA240 输出零点 (REF1=VS, REF2=GND → VS/2)
+#define ADC_SHUNT_RES 0.01f                                       // 分流电阻 (Ω)
+#define ADC_INA_GAIN 50.0f                                        // INA240A2 增益 (V/V)
+#define ADC_CURRENT_SCALE (1.0f / (ADC_INA_GAIN * ADC_SHUNT_RES)) // = 2.0 A/V
+
+#define ADC_VREF 3.3f                                             // ADC 参考电压
+#define ADC_RESOLUTION 4096.0f                                    // 12位 ADC 分辨率
+
+#define ADC_CALIB_SAMPLES 256  // 零点标定采样次数
+#define ADC_CALIB_DELAY_US 20  // 每次标定采样间隔 (us)
+#define ADC_CALIB_SETTLE_MS 20 // 标定前等待模拟前端稳定 (ms)
+
+// 三相电流值
 typedef struct
 {
     float ia;
     float ib;
     float ic;
-    float udc;
 } adc_values_t;
 
-// 三相电流零点补偿值
+// AB相零点偏移
 typedef struct
 {
     float ia_offset;
     float ib_offset;
-    float ic_offset;
 } adc_offset_t;
 
-// ADC注入组中断回调函数类型 
+// 注入组中断回调函数指针类型
 typedef void (*adc_injected_callback_p)(void);
 
-// ADC句柄声明 
-extern ADC_HandleTypeDef hadc1;
-extern DMA_HandleTypeDef hdma_adc1;
-
-#define ADC_REF_VOLTAGE 1.65f              // ADC参考电压(理论零点)，单位V
-#define ADC_CURRENT_SCALE (100.0f / 16.5f) // 电流传感器比例系数，单位V/A
-#define ADC_UDC_SCALE 23.0f                // Udc母线电压转换比例，单位V/bit
-
-void adc1_get_offset(adc_offset_t *offsets); /* 调试接口，仅供测试使用 */
-
-void adc1_init(void);
+void adc_init(void);
+void adc1_get_offset(adc_offset_t *offsets);
 void adc1_get_regular_values(adc_values_t *values);
 void adc1_get_injected_values(adc_values_t *values);
-
-// 注册ADC注入组中断回调函数
 void adc1_register_injected_callback(adc_injected_callback_p callback);
 
-#endif // __ADC_H__
+#endif /* __ADC_H */

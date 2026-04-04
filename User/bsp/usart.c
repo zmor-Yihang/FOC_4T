@@ -114,7 +114,7 @@ void usart2_init(void)
     gpio_init_struct.Pin = GPIO_PIN_2;
     gpio_init_struct.Mode = GPIO_MODE_AF_PP;
     gpio_init_struct.Pull = GPIO_NOPULL;
-    gpio_init_struct.Speed = GPIO_SPEED_FREQ_HIGH;
+    gpio_init_struct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     gpio_init_struct.Alternate = GPIO_AF7_USART2; /* 配置复用功能为USART2 */
     HAL_GPIO_Init(GPIOA, &gpio_init_struct);
 

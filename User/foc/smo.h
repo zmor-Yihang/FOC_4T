@@ -2,7 +2,7 @@
 #define __SMO_H__
 
 #include <math.h>
-#include "utils/fast_sin_cos.h"
+#include "fast_sin_cos.h"
 #include "pid.h"
 
 // 滑模观测器结构体

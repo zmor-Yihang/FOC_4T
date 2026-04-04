@@ -38,10 +38,10 @@
 // c) add the relative path to: "../src/subrepo/fifofast/" or wherever this code is located. DONE!
 //
 // YOU DO NOT need to change the include(s) below.
-#include "utils/macros/mpl/macro_cat.h"
-#include "utils/macros/com/macro_array.h"
-#include "utils/macros/com/macro_math.h"
-#include "utils/macros/com/macro_type.h"
+#include "macros/mpl/macro_cat.h"
+#include "macros/com/macro_array.h"
+#include "macros/com/macro_math.h"
+#include "macros/com/macro_type.h"
 
 //////////////////////////////////////////////////////////////////////////
 // User Config

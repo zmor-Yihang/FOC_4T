@@ -2,7 +2,7 @@
 #define __LUENBERGER_H__
 
 #include <math.h>
-#include "utils/fast_sin_cos.h"
+#include "fast_sin_cos.h"
 #include "pid.h"
 
 // Luenberger 观测器结构体

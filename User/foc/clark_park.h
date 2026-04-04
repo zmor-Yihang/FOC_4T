@@ -1,8 +1,7 @@
 #ifndef __CLARK_PARK_H__
 #define __CLARK_PARK_H__
 
-#include "stm32g4xx_hal.h"
-#include "./utils/fast_sin_cos.h"
+#include "fast_sin_cos.h"
 
 /* 三相坐标系 */
 typedef struct

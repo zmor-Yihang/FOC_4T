@@ -2,10 +2,10 @@
 #define __SENSORLESS_FLUX_OBSERVER_H__
 
 #include <stdio.h>
-#include "foc/flux_observer.h"
-#include "foc/foc.h"
-#include "utils/ramp.h"
-#include "utils/print.h"
+#include "flux_observer.h"
+#include "foc.h"
+#include "ramp.h"
+#include "print.h"
 
 void sensorless_flux_observer_init(float target_speed_rpm);
 void print_sensorless_flux_observer_info(void);
