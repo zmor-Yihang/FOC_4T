@@ -3,7 +3,7 @@
 
 #include "clark_park.h"
 #include "fast_sin_cos.h"
-#include "main.h"
+#include "motor_config.h"
 
 /**
  * @brief  SVPWM调制函数

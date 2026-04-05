@@ -3,6 +3,7 @@
 
 #include "gpio.h"
 #include "foc.h"
+#include "encoder.h"
 #include "print.h"
 
 void current_closed_init(float id, float iq);

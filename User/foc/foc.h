@@ -5,11 +5,10 @@
 #include "clark_park.h"
 #include "svpwm.h"
 #include "pid.h"
-#include "as5047.h"
 #include "tim.h"
 #include "adc.h"
-#include "flux_weakening.h"
-#include "main.h"
+#include "motor_config.h"
+#include "encoder.h"
 
 /* FOC 核心控制对象 */
 typedef struct
@@ -19,8 +18,6 @@ typedef struct
     float target_speed; /* 目标值 */
     float target_id;
     float target_iq;
-
-    flux_weak_t flux_weak; /* 弱磁控制对象 */
 
     float v_d_out; /* D轴电压输出 */
     float v_q_out; /* Q轴电压输出 */
@@ -41,14 +38,9 @@ typedef struct
 void foc_init(foc_t *handle, pid_controller_t *pid_id, pid_controller_t *pid_iq, pid_controller_t *pid_speed);
 void foc_alignment(foc_t *handle);
 
-/* 开环控制 */
-void foc_open_loop_run(foc_t *handle, float speed_rpm, float voltage_q);
-void foc_if_current_run(foc_t *handle, dq_t i_dq, float speed_rpm, float current_q);
-
 /* 闭环控制 */
 void foc_current_closed_loop_run(foc_t *handle, dq_t i_dq, float angle_el);
 void foc_speed_closed_loop_run(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_div);
-void foc_flux_weak_speed_closed_loop_run(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_div);
 
 /* 设置目标值 */
 void foc_set_target_id(foc_t *handle, float id);

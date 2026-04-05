@@ -2,12 +2,13 @@
 
 TIM_HandleTypeDef htim2; // TIM2句柄
 TIM_HandleTypeDef htim3; // TIM3句柄
+TIM_HandleTypeDef htim6; // TIM6句柄: 速度环定时器
 
 void tim_init(void)
 {
     GPIO_InitTypeDef gpio_init_struct = {0};
     TIM_OC_InitTypeDef tim_oc_init_struct = {0};
-
+    TIM_MasterConfigTypeDef master_config = {0};
     __HAL_RCC_GPIOA_CLK_ENABLE(); // 使能GPIOA时钟
     __HAL_RCC_TIM2_CLK_ENABLE();  // 使能TIM2时钟（A相PWM + ADC触发）
     __HAL_RCC_TIM3_CLK_ENABLE();  // 使能TIM3时钟（B相/C相PWM）
@@ -26,12 +27,16 @@ void tim_init(void)
     HAL_GPIO_Init(GPIOA, &gpio_init_struct);        // 按上述配置初始化PA6/PA7
 
     htim2.Instance = TIM2;                                        // 绑定TIM2外设
-    htim2.Init.Prescaler = TIM1_PRESCALER;                        // 预分频值（PSC），决定计数器频率 = 时钟源/(PSC+1)
+    htim2.Init.Prescaler = TIM1_PRESCALER;                        // 预分频值（PSC）
     htim2.Init.Period = TIM1_PERIOD;                              // 自动重装载值（ARR），决定PWM频率
     htim2.Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED1;      // 中央对齐模式1（向上/向下都计数，产生对称PWM）
     htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;            // 不分频
     htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE; // 使能ARR预装载
     HAL_TIM_PWM_Init(&htim2);                                     // 初始化TIM2为PWM模式
+
+    master_config.MasterOutputTrigger = TIM_TRGO_UPDATE;         // 更新事件(计数器下溢)作为TRGO输出触发ADC
+    master_config.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE; // 不需要主从级联
+    HAL_TIMEx_MasterConfigSynchronization(&htim2, &master_config);
 
     htim3.Instance = TIM3;                                        // 绑定TIM3外设
     htim3.Init.Prescaler = TIM1_PRESCALER;                        // 预分频值，与TIM2保持一致
@@ -50,18 +55,10 @@ void tim_init(void)
     HAL_TIM_PWM_ConfigChannel(&htim3, &tim_oc_init_struct, TIM_CHANNEL_1);
     HAL_TIM_PWM_ConfigChannel(&htim3, &tim_oc_init_struct, TIM_CHANNEL_2);
 
-    tim_oc_init_struct.Pulse = 1;                                         // 设置CCR2=1，在谷底附近触发ADC采样
-    HAL_TIM_OC_ConfigChannel(&htim2, &tim_oc_init_struct, TIM_CHANNEL_2); // 配置TIM2_CH2为输出比较模式（ADC触发源）
-
-    // 计数器清零
-    __HAL_TIM_SET_COUNTER(&htim2, 0); // 将TIM2计数器归零
-    __HAL_TIM_SET_COUNTER(&htim3, 0); // 将TIM3计数器归零
-
     // 启动PWM输出
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1); // 启动B相PWM输出
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); // 启动C相PWM输出
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // 启动A相PWM输出
-    HAL_TIM_OC_Start(&htim2, TIM_CHANNEL_2);  // 启动ADC触发通道（无引脚输出，仅内部使用）
 }
 
 void tim_set_pwm_duty(float duty1, float duty2, float duty3)

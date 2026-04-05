@@ -2,8 +2,11 @@
 #define __ENCODER_H__
 
 #include "stm32g4xx_hal.h"
+#include "motor_config.h"
+#include "i2c.h"
 
-#define AS5600_I2C_ADDR (0x36 << 1) // AS5600的7位I2C地址是0x36，STM32 HAL中通常左移1位使用
+// AS5600寄存器地址定义
+#define AS5600_I2C_ADDR (0x36 << 1) // AS5600的7位I2C地址是0x36，HAL中左移1位使用
 
 #define AS5600_REG_ZMCO 0x00   // OTP烧录计数寄存器，记录ZPOS/MPOS永久烧录次数
 #define AS5600_REG_ZPOS_H 0x01 // 零位起始角高字节，设置输出起点位置[11:8]
@@ -33,5 +36,24 @@
 
 #define AS5600_BURN_ANGLE 0x80   // 烧录ZPOS/MPOS命令
 #define AS5600_BURN_SETTING 0x40 // 烧录MANG/CONF命令
+
+// 速度计算参数
+#define ENCODER_CPR 4096.0f
+#define ENCODER_TWO_PI 6.28318530718f
+
+#define SPEED_CAL_DIV 20                 // 速度计算分频，adc采样频率 / SPEED_CAL_DIV = 速度计算频率
+#define ENCODER_SPEED_SAMPLE_TIME 0.001f // 速度计算周期 = 1/20k * SPEED_CAL_DIV = 1ms
+#define ENCODER_SPEED_FILTER_ALPHA 0.05f // 速度滤波系数，范围(0,1)，值越小滤波越强但响应越慢
+
+void encoder_init(void);
+
+void encoder_update_speed(void);
+float encoder_get_angle_rad(void);
+float encoder_get_speed_rpm(void);
+float encoder_get_speed_rpm_lpf(void);
+
+uint8_t encoder_get_status(void);
+uint8_t encoder_get_agc(void);
+uint16_t encoder_get_mag(void);
 
 #endif /* encoder.h */

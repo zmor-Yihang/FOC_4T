@@ -16,6 +16,9 @@ static adc_offset_t adc_offset = {0};
 // 注入组中断回调函数指针
 static adc_injected_callback_p adc_injected_callback = NULL;
 
+// 注入组转换完成计数器
+static volatile uint32_t adc_injected_irq_count = 0;
+
 /**
  * @brief  将 ADC 原始值转换为原始电压 (V)
  */
@@ -32,7 +35,7 @@ static inline float adc_raw_to_voltage(uint16_t adc_raw)
  *         -> I = (Vout - Vref - offset) / (Gain x Rshunt)
  *         -> I = (Vout - Vref - offset) x ADC_CURRENT_SCALE
  */
-static void adc1_value_convert(uint16_t *adc_buf, adc_values_t *out)
+static void adc_value_convert(uint16_t *adc_buf, adc_values_t *out)
 {
     float vout_a = adc_raw_to_voltage(adc_buf[0]); // A相 INA240 输出电压
     float vout_b = adc_raw_to_voltage(adc_buf[1]); // B相 INA240 输出电压
@@ -123,11 +126,11 @@ void adc_init(void)
     hadc1.Init.ContinuousConvMode = ENABLE; // 连续转换模式
     hadc1.Init.NbrOfConversion = 2;         // 规则组通道数: IA + IB
     hadc1.Init.DiscontinuousConvMode = DISABLE;
-    hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START; // 软件触发规则组
-    hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
-    hadc1.Init.DMAContinuousRequests = ENABLE;     // 持续DMA请求
-    hadc1.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN; // 溢出时覆盖旧数据
-    hadc1.Init.OversamplingMode = ENABLE;          // 启用过采样提高精度
+    hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;                // 软件触发规则组
+    hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE; // 规则组无外部触发边沿
+    hadc1.Init.DMAContinuousRequests = ENABLE;                       // 持续DMA请求
+    hadc1.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;                   // 溢出时覆盖旧数据
+    hadc1.Init.OversamplingMode = ENABLE;                            // 启用过采样提高精度
     HAL_ADC_Init(&hadc1);
 
     multimode.Mode = ADC_MODE_INDEPENDENT; // 独立模式, 不使用双ADC
@@ -158,7 +161,7 @@ void adc_init(void)
     injected.InjectedDiscontinuousConvMode = DISABLE;
     injected.AutoInjectedConv = DISABLE; // 不自动注入
     injected.QueueInjectedContext = DISABLE;
-    injected.ExternalTrigInjecConv = ADC_EXTERNALTRIG_T2_CC2;                   // TIM2捕获比较事件触发
+    injected.ExternalTrigInjecConv = ADC_EXTERNALTRIGINJEC_T2_TRGO;             // TIM2捕获比较事件触发
     injected.ExternalTrigInjecConvEdge = ADC_EXTERNALTRIGINJECCONV_EDGE_RISING; // 上升沿触发
     injected.InjecOversamplingMode = ENABLE;                                    // 注入组也启用过采样
     HAL_ADCEx_InjectedConfigChannel(&hadc1, &injected);
@@ -169,7 +172,7 @@ void adc_init(void)
     HAL_ADCEx_InjectedConfigChannel(&hadc1, &injected);
 
     // ADC 中断配置 (注入组转换完成中断, 用于FOC电流环回调)
-    HAL_NVIC_SetPriority(ADC1_2_IRQn, 1, 0); // 抢占优先级1, 子优先级0
+    HAL_NVIC_SetPriority(ADC1_2_IRQn, 0, 0); // 抢占优先级0, 子优先级0
     HAL_NVIC_EnableIRQ(ADC1_2_IRQn);         // 使能ADC1/ADC2全局中断
 
     // ADC 内部校准, 消除ADC本身偏移误差
@@ -185,7 +188,7 @@ void adc_init(void)
 /**
  * @brief  获取标定得到的零点偏移量
  */
-void adc1_get_offset(adc_offset_t *offsets)
+void adc_get_offset(adc_offset_t *offsets)
 {
     offsets->ia_offset = adc_offset.ia_offset; // 输出A相零点偏移
     offsets->ib_offset = adc_offset.ib_offset; // 输出B相零点偏移
@@ -194,26 +197,31 @@ void adc1_get_offset(adc_offset_t *offsets)
 /**
  * @brief  规则组采样获取当前电流值 (阻塞式, 调试用)
  */
-void adc1_get_regular_values(adc_values_t *values)
+void adc_get_regular_values(adc_values_t *values)
 {
     HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_regular_buf, 2); // 启动规则组DMA采样
     HAL_Delay(10);                                             // 等待10ms让ADC完成多次转换
-    adc1_value_convert(adc_regular_buf, values);               // 将ADC原始值转换为电流值
+    adc_value_convert(adc_regular_buf, values);                // 将ADC原始值转换为电流值
     HAL_ADC_Stop_DMA(&hadc1);                                  // 停止DMA
 }
 
 /**
  * @brief  获取最近一次注入组采样的电流值 (非阻塞)
  */
-void adc1_get_injected_values(adc_values_t *values)
+void adc_get_injected_values(adc_values_t *values)
 {
-    adc1_value_convert(adc_injected_buf, values); // 使用注入组缓冲区的最新数据转换为电流值
+    adc_value_convert(adc_injected_buf, values); // 使用注入组缓冲区的最新数据转换为电流值
+}
+
+uint32_t adc_get_injected_irq_count(void)
+{
+    return adc_injected_irq_count;
 }
 
 /**
  * @brief  注册注入组采样完成回调 (此回调中执行 FOC 计算)
  */
-void adc1_register_injected_callback(adc_injected_callback_p callback)
+void adc_register_injected_callback(adc_injected_callback_p callback)
 {
     adc_injected_callback = callback; // 保存用户回调函数指针
 }
@@ -235,6 +243,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
     if (hadc->Instance == ADC1) // 确认是ADC1的中断
     {
+        adc_injected_irq_count++;
         adc_injected_buf[0] = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1); // 读取IA相注入通道值
         adc_injected_buf[1] = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_2); // 读取IB相注入通道值
 
@@ -244,3 +253,4 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         }
     }
 }
+

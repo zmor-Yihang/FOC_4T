@@ -35,9 +35,10 @@ typedef struct
 typedef void (*adc_injected_callback_p)(void);
 
 void adc_init(void);
-void adc1_get_offset(adc_offset_t *offsets);
-void adc1_get_regular_values(adc_values_t *values);
-void adc1_get_injected_values(adc_values_t *values);
-void adc1_register_injected_callback(adc_injected_callback_p callback);
+void adc_get_offset(adc_offset_t *offsets);
+void adc_get_regular_values(adc_values_t *values);
+void adc_get_injected_values(adc_values_t *values);
+uint32_t adc_get_injected_irq_count(void);
+void adc_register_injected_callback(adc_injected_callback_p callback);
 
 #endif /* __ADC_H */

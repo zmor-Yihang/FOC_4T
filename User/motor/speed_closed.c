@@ -19,11 +19,11 @@ static float ic_temp = 0.0f;
 static void speed_closed_callback(void)
 {
     // 更新速度
-    as5047_update_speed();
+    encoder_update_speed();
 
     // 获取角度和速度
-    float angle_el = as5047_get_angle_rad() - foc_speed_closed_handle.angle_offset;
-    float speed_feedback = as5047_get_speed_rpm();
+    float angle_el = encoder_get_angle_rad() - foc_speed_closed_handle.angle_offset;
+    float speed_feedback = encoder_get_speed_rpm();
 
     // 打印用
     speed_rpm_temp = speed_feedback;
@@ -31,7 +31,7 @@ static void speed_closed_callback(void)
 
     // 获取电流反馈值
     adc_values_t adc_values;
-    adc1_get_injected_values(&adc_values);
+    adc_get_injected_values(&adc_values);
 
     // Clark 变换
     abc_t i_abc = {.a = adc_values.ia, .b = adc_values.ib, .c = adc_values.ic};
@@ -48,15 +48,15 @@ static void speed_closed_callback(void)
     ic_temp = i_abc.c;
 
     // 速度闭环
-    foc_speed_closed_loop_run(&foc_speed_closed_handle, i_dq, angle_el, speed_feedback, AS5047_SPEED_CALC_DIV);
+    foc_speed_closed_loop_run(&foc_speed_closed_handle, i_dq, angle_el, speed_feedback, SPEED_LOOP_DIV);
 }
 
 void speed_closed_init(float speed_rpm)
 {
     // 初始化速度环 PID 控制器
-    pid_init(&pid_id, 0.009f, 0.3333f, -U_DC / 2.0f, U_DC / 2.0f);
-    pid_init(&pid_iq, 0.009f, 0.3333f, -U_DC / 2.0f, U_DC / 2.0f);
-    pid_init(&pid_speed, 0.042f, 0.00005f, -2.0f, 2.0f);
+    pid_init(&pid_id, 0.09f, 0.3333f, -U_DC / 2.0f, U_DC / 2.0f);
+    pid_init(&pid_iq, 0.09f, 0.3333f, -U_DC / 2.0f, U_DC / 2.0f);
+    pid_init(&pid_speed, 0.42f, 0.005f, -2.0f, 2.0f);
 
     // 初始化 FOC 控制句柄
     foc_init(&foc_speed_closed_handle, &pid_id, &pid_iq, &pid_speed);
@@ -69,7 +69,7 @@ void speed_closed_init(float speed_rpm)
     foc_alignment(&foc_speed_closed_handle);
 
     // 注册回调函数
-    adc1_register_injected_callback(speed_closed_callback);
+    adc_register_injected_callback(speed_closed_callback);
 }
 
 void print_speed_info(void)
