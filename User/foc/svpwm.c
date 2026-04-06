@@ -293,5 +293,5 @@ abc_t svpwm_minmax(alphabeta_t u_alphabeta)
 /* 默认使用扇区法 */
 abc_t svpwm_update(alphabeta_t u_alphabeta)
 {
-    return svpwm_sector2(u_alphabeta);
+    return svpwm_minmax(u_alphabeta);
 }

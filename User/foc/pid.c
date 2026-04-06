@@ -13,8 +13,8 @@ void pid_init(pid_controller_t *pid, float kp, float ki, float out_min, float ou
     pid->out_min = out_min;
     pid->out_max = out_max;
 
-    // 积分限幅取输出范围的75%
-    pid->integral_max = 0.75f * fmaxf(fabsf(out_min), fabsf(out_max));
+    // 积分限幅取输出范围的50%
+    pid->integral_max = 0.50f * fmaxf(fabsf(out_min), fabsf(out_max));
 
     // Back-calculation 增益: Kt = 1/Kp，将输出饱和误差折算回积分器
     // kp=0 时为纯积分控制器，禁用 Back-calculation

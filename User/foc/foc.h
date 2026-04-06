@@ -39,8 +39,8 @@ void foc_init(foc_t *handle, pid_controller_t *pid_id, pid_controller_t *pid_iq,
 void foc_alignment(foc_t *handle);
 
 /* 闭环控制 */
-void foc_current_closed_loop_run(foc_t *handle, dq_t i_dq, float angle_el);
-void foc_speed_closed_loop_run(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_div);
+void foc_current_loop_run(foc_t *handle, dq_t i_dq, float angle_el);
+void foc_speed_loop_run(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_divider);
 
 /* 设置目标值 */
 void foc_set_target_id(foc_t *handle, float id);

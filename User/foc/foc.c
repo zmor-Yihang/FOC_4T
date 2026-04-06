@@ -52,7 +52,7 @@ void foc_alignment(foc_t *handle)
  * @param i_dq      dq 轴电流反馈
  * @param angle_el  电角度 (rad)
  */
-void foc_current_closed_loop_run(foc_t *handle, dq_t i_dq, float angle_el)
+void foc_current_loop_run(foc_t *handle, dq_t i_dq, float angle_el)
 {
     /* 电流环 PID */
     handle->v_d_out = pid_calculate(handle->pid_id, handle->target_id, i_dq.d);
@@ -72,22 +72,16 @@ void foc_current_closed_loop_run(foc_t *handle, dq_t i_dq, float angle_el)
  * @param i_dq      dq 轴电流反馈
  * @param angle_el  电角度 (rad)
  * @param speed_rpm 速度反馈 (RPM)
- * @param speed_loop_div 速度环分频系数，1表示每次都更新速度环
  */
-void foc_speed_closed_loop_run(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_div)
+void foc_speed_loop_run(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_divider)
 {
-    static uint8_t speed_loop_div_cnt = 0;
+    static uint8_t speed_loop_div = 0;
+    uint8_t divider = (speed_loop_divider == 0U) ? 1U : speed_loop_divider;
 
-    if (speed_loop_div == 0)
+    /* 速度环按分频执行，其他周期保持上一次 iq 目标 */
+    if (++speed_loop_div >= divider)
     {
-        speed_loop_div = 1;
-    }
-
-    /* 按分频更新速度环，其他周期复用上次 target_iq */
-    speed_loop_div_cnt++;
-    if (speed_loop_div_cnt >= speed_loop_div)
-    {
-        speed_loop_div_cnt = 0;
+        speed_loop_div = 0;
         handle->target_iq = pid_calculate(handle->pid_speed, handle->target_speed, speed_rpm);
     }
 
@@ -95,7 +89,7 @@ void foc_speed_closed_loop_run(foc_t *handle, dq_t i_dq, float angle_el, float s
     handle->target_id = 0.0f;
 
     /* 复用电流闭环 */
-    foc_current_closed_loop_run(handle, i_dq, angle_el);
+    foc_current_loop_run(handle, i_dq, angle_el);
 }
 
 

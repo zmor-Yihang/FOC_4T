@@ -18,7 +18,7 @@ static float adc_inj_irq_cnt_temp = 0.0f;
 static void current_closed_callback(void)
 {
     // 计算角度
-    float angle_el = -encoder_get_angle_rad() - foc_current_closed_handle.angle_offset;
+    float angle_el = encoder_get_angle_rad() - foc_current_closed_handle.angle_offset;
 
     // 获取电流反馈值
     adc_values_t adc_values;
@@ -33,21 +33,21 @@ static void current_closed_callback(void)
 
     // 打印用
     i_dq_temp = i_dq;
-    
+
     encoder_update_speed();
-    speed_temp = encoder_get_speed_rpm_lpf();
+    speed_temp = encoder_get_speed_rpm();
     adc_inj_irq_cnt_temp = (float)adc_get_injected_irq_count();
 
     // 电流闭环
-    foc_current_closed_loop_run(&foc_current_closed_handle, i_dq, angle_el);
+    foc_current_loop_run(&foc_current_closed_handle, i_dq, angle_el);
 }
 
 void current_closed_init(float id, float iq)
 {
     // 初始化电流环 PID 控制器
-    pid_init(&pid_id, 0.573f, 0.965f, -U_DC / 2.0f, U_DC / 2.0f);
-    pid_init(&pid_iq, 0.573f, 0.965f, -U_DC / 2.0f, U_DC / 2.0f);
-
+    pid_init(&pid_id, 2.7f, 0.148f, -U_DC / 2.0f, U_DC / 2.0f);
+    pid_init(&pid_iq, 2.7f, 0.148f, -U_DC / 2.0f, U_DC / 2.0f);
+    
     // 初始化 FOC 控制句柄
     foc_init(&foc_current_closed_handle, &pid_id, &pid_iq, NULL);
 

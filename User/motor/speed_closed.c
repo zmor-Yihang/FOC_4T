@@ -7,6 +7,8 @@ static pid_controller_t pid_iq;
 
 static pid_controller_t pid_speed;
 
+static uint8_t speed_loop_divider = 10;
+
 // 打印用
 static float speed_rpm_temp = 0.0f;
 static float angle_el_temp = 0.0f;
@@ -25,10 +27,6 @@ static void speed_closed_callback(void)
     float angle_el = encoder_get_angle_rad() - foc_speed_closed_handle.angle_offset;
     float speed_feedback = encoder_get_speed_rpm();
 
-    // 打印用
-    speed_rpm_temp = speed_feedback;
-    angle_el_temp = angle_el;
-
     // 获取电流反馈值
     adc_values_t adc_values;
     adc_get_injected_values(&adc_values);
@@ -46,17 +44,19 @@ static void speed_closed_callback(void)
     ia_temp = i_abc.a;
     ib_temp = i_abc.b;
     ic_temp = i_abc.c;
+    speed_rpm_temp = speed_feedback;
+    angle_el_temp = angle_el;
 
     // 速度闭环
-    foc_speed_closed_loop_run(&foc_speed_closed_handle, i_dq, angle_el, speed_feedback, SPEED_LOOP_DIV);
+    foc_speed_loop_run(&foc_speed_closed_handle, i_dq, angle_el, speed_feedback, speed_loop_divider);
 }
 
 void speed_closed_init(float speed_rpm)
 {
     // 初始化速度环 PID 控制器
-    pid_init(&pid_id, 0.09f, 0.3333f, -U_DC / 2.0f, U_DC / 2.0f);
-    pid_init(&pid_iq, 0.09f, 0.3333f, -U_DC / 2.0f, U_DC / 2.0f);
-    pid_init(&pid_speed, 0.42f, 0.005f, -2.0f, 2.0f);
+    pid_init(&pid_id, 2.7f, 0.148f, -U_DC / 2.0f, U_DC / 2.0f);
+    pid_init(&pid_iq, 2.7f, 0.148f, -U_DC / 2.0f, U_DC / 2.0f);
+    pid_init(&pid_speed, 0.000025f, 0.0067f, -1.5f, 1.5f);
 
     // 初始化 FOC 控制句柄
     foc_init(&foc_speed_closed_handle, &pid_id, &pid_iq, &pid_speed);

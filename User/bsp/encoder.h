@@ -38,22 +38,27 @@
 #define AS5600_BURN_SETTING 0x40 // 烧录MANG/CONF命令
 
 // 速度计算参数
-#define ENCODER_CPR 4096.0f
+#define ENCODER_CPR 4096
 #define ENCODER_TWO_PI 6.28318530718f
 
-#define SPEED_CAL_DIV 20                 // 速度计算分频，adc采样频率 / SPEED_CAL_DIV = 速度计算频率
-#define ENCODER_SPEED_SAMPLE_TIME 0.001f // 速度计算周期 = 1/20k * SPEED_CAL_DIV = 1ms
-#define ENCODER_SPEED_FILTER_ALPHA 0.05f // 速度滤波系数，范围(0,1)，值越小滤波越强但响应越慢
+// 编码器方向修正系数：当机械安装方向或电角度定义方向与FOC控制所需正方向相反时设为-1，
+// 相同则设为1；该系数会乘到编码器读数上，用于统一修正角度与转速符号方向
+#define ENCODER_DIRECTION (-1)
+
+// 速度计算分频系数：`encoder_update_speed()` 必须在固定周期中断里按 `ENCODER_SPEED_SAMPLE_TIME` 对应的基础周期稳定调用一次，
+#define SPEED_CAL_DIV 10
+
+// 编码器速度基础采样周期，单位秒：它表示 `encoder_update_speed()` 两次相邻调用之间的理论时间间隔；
+// ENCODER_SPEED_SAMPLE_TIME = 电流环周期 * SPEED_CAL_DIV
+#define ENCODER_SPEED_SAMPLE_TIME 0.00005f
+
+// 速度一阶低通滤波系数
+#define ENCODER_SPEED_FILTER_ALPHA 0.01f
 
 void encoder_init(void);
 
 void encoder_update_speed(void);
 float encoder_get_angle_rad(void);
 float encoder_get_speed_rpm(void);
-float encoder_get_speed_rpm_lpf(void);
-
-uint8_t encoder_get_status(void);
-uint8_t encoder_get_agc(void);
-uint16_t encoder_get_mag(void);
 
 #endif /* encoder.h */

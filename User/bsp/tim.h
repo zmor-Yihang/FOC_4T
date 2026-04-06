@@ -16,9 +16,6 @@ extern TIM_HandleTypeDef htim3;
 #define TIM1_PRESCALER 0 /* 预分频值 */
 #define TIM1_PERIOD 8500 /* 自动重装载值（ARR） */
 
-#define TIM6_PRESCALER 169 // 170MHz / (169+1) = 1MHz定时器时钟，1us计数一次
-#define TIM6_PERIOD 999   // 1000us = 1ms周期，TIM6用于1ms定时器中断，触发速度环计算
-
 void tim_init(void);
 void tim_set_pwm_duty(float duty1, float duty2, float duty3);
 
