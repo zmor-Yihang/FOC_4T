@@ -10,6 +10,16 @@
 #include "motor_config.h"
 #include "encoder.h"
 
+// 对齐过程相关参数
+#define FOC_ALIGN_D_AXIS_VOLTAGE      (1.0f)
+#define FOC_ALIGN_SETTLE_TIME_MS      (500U)
+#define FOC_ALIGN_SCAN_POINTS         (64U)
+#define FOC_ALIGN_SCAN_REPEAT         (2U)
+#define FOC_ALIGN_SAMPLE_INTERVAL_MS  (20U)
+
+// SVPWM 电压矢量限幅比例, SVPWM 电压矢量限幅比例 (1/sqrt(3))
+#define FOC_VOLTAGE_LIMIT_SVPWM_SCALE (0.57735026919f) 
+
 /* FOC 核心控制对象 */
 typedef struct
 {

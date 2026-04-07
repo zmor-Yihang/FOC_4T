@@ -1,5 +1,22 @@
 #include "foc.h"
 
+#define FOC_VOLTAGE_LIMIT_SVPWM_SCALE (0.57735026919f)
+
+static float foc_wrap_angle(float angle)
+{
+    while (angle >= ENCODER_TWO_PI)
+    {
+        angle -= ENCODER_TWO_PI;
+    }
+
+    while (angle < 0.0f)
+    {
+        angle += ENCODER_TWO_PI;
+    }
+
+    return angle;
+}
+
 void foc_init(foc_t *handle, pid_controller_t *pid_id, pid_controller_t *pid_iq, pid_controller_t *pid_speed)
 {
     handle->target_speed = 0;
@@ -28,19 +45,57 @@ void foc_init(foc_t *handle, pid_controller_t *pid_id, pid_controller_t *pid_iq,
 
 void foc_alignment(foc_t *handle)
 {
-    /* 施加d轴电压，让转子对齐到电角度0位置 */
-    dq_t u_dq = {.d = 1.0f, .q = 0.0f};
+    float sin_sum = 0.0f;
+    float cos_sum = 0.0f;
+    uint16_t sample_idx;
+    uint8_t repeat_idx;
 
-    /* 开环输出，固定电角度为0 */
-    alphabeta_t alpha_beta = ipark_transform(u_dq, 0);
-    abc_t duty_abc = svpwm_update(alpha_beta);
-    tim_set_pwm_duty(duty_abc.a, duty_abc.b, duty_abc.c);
+    dq_t u_dq = {.d = FOC_ALIGN_D_AXIS_VOLTAGE, .q = 0.0f};
 
-    /* 等待转子稳定 */
-    HAL_Delay(1000);
+    /* 先建立稳定磁场 */
+    {
+        alphabeta_t alpha_beta = ipark_transform(u_dq, 0.0f);
+        abc_t duty_abc = svpwm_update(alpha_beta);
+        tim_set_pwm_duty(duty_abc.a, duty_abc.b, duty_abc.c);
+    }
 
-    /* 读取当前电角度作为零点偏移 */
-    handle->angle_offset = encoder_get_angle_rad();
+    HAL_Delay(FOC_ALIGN_SETTLE_TIME_MS);
+
+    /* 缓慢扫描一整圈电角度，累计每个采样点的偏移圆均值 */
+    for (repeat_idx = 0U; repeat_idx < FOC_ALIGN_SCAN_REPEAT; repeat_idx++)
+    {
+        for (sample_idx = 0U; sample_idx < FOC_ALIGN_SCAN_POINTS; sample_idx++)
+        {
+            float angle_cmd = (ENCODER_TWO_PI * (float)sample_idx) / (float)FOC_ALIGN_SCAN_POINTS;
+            float angle_meas;
+            float offset_sample;
+            float sin_offset;
+            float cos_offset;
+            alphabeta_t alpha_beta = ipark_transform(u_dq, angle_cmd);
+            abc_t duty_abc = svpwm_update(alpha_beta);
+
+            tim_set_pwm_duty(duty_abc.a, duty_abc.b, duty_abc.c);
+
+            HAL_Delay(FOC_ALIGN_SAMPLE_INTERVAL_MS);
+
+            angle_meas = encoder_get_angle_rad();
+            offset_sample = foc_wrap_angle(angle_cmd - angle_meas);
+
+            fast_sin_cos(offset_sample, &sin_offset, &cos_offset);
+            sin_sum += sin_offset;
+            cos_sum += cos_offset;
+        }
+
+        /* 每圈结束后回到零角，减少下一圈起点跳变 */
+        {
+            alphabeta_t alpha_beta = ipark_transform(u_dq, 0.0f);
+            abc_t duty_abc = svpwm_update(alpha_beta);
+            tim_set_pwm_duty(duty_abc.a, duty_abc.b, duty_abc.c);
+            HAL_Delay(FOC_ALIGN_SETTLE_TIME_MS);
+        }
+    }
+
+    handle->angle_offset = foc_wrap_angle(atan2f(sin_sum, cos_sum));
 
     /* 关闭PWM输出 */
     tim_set_pwm_duty(0.5f, 0.5f, 0.5f);
@@ -54,9 +109,32 @@ void foc_alignment(foc_t *handle)
  */
 void foc_current_loop_run(foc_t *handle, dq_t i_dq, float angle_el)
 {
+    float v_d_unsat;
+    float v_q_unsat;
+
     /* 电流环 PID */
-    handle->v_d_out = pid_calculate(handle->pid_id, handle->target_id, i_dq.d);
-    handle->v_q_out = pid_calculate(handle->pid_iq, handle->target_iq, i_dq.q);
+    v_d_unsat = pid_calculate(handle->pid_id, handle->target_id, i_dq.d);
+    v_q_unsat = pid_calculate(handle->pid_iq, handle->target_iq, i_dq.q);
+
+    handle->v_d_out = v_d_unsat;
+    handle->v_q_out = v_q_unsat;
+
+    /* dq 电压矢量联合限幅，适配 SVPWM */
+    {
+        float v_limit = U_DC * FOC_VOLTAGE_LIMIT_SVPWM_SCALE;
+        float v_mag_sq = handle->v_d_out * handle->v_d_out + handle->v_q_out * handle->v_q_out;
+        float v_limit_sq = v_limit * v_limit;
+
+        if (v_mag_sq > v_limit_sq)
+        {
+            float scale = v_limit / sqrtf(v_mag_sq);
+            handle->v_d_out *= scale;
+            handle->v_q_out *= scale;
+        }
+    }
+
+    handle->pid_id->backcalc_error = v_d_unsat - handle->v_d_out;
+    handle->pid_iq->backcalc_error = v_q_unsat - handle->v_q_out;
 
     /* 逆 Park 变换 */
     alphabeta_t v_alphabeta = ipark_transform((dq_t){.d = handle->v_d_out, .q = handle->v_q_out}, angle_el);
@@ -91,7 +169,6 @@ void foc_speed_loop_run(foc_t *handle, dq_t i_dq, float angle_el, float speed_rp
     /* 复用电流闭环 */
     foc_current_loop_run(handle, i_dq, angle_el);
 }
-
 
 void foc_set_target_id(foc_t *handle, float id)
 {

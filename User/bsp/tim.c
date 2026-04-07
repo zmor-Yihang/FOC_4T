@@ -26,51 +26,59 @@ void tim_init(void)
     gpio_init_struct.Alternate = GPIO_AF2_TIM3;
     HAL_GPIO_Init(GPIOA, &gpio_init_struct);
 
-    // TIM2: Master
+    // TIM2
     htim2.Instance = TIM2;
-    htim2.Init.Prescaler = TIM1_PRESCALER;                        // 预分频
-    htim2.Init.Period = TIM1_PERIOD;                              // 自动重装载值
-    htim2.Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED1;      // 中心对齐模式1
-    htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;            // 时钟分频
-    htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE; // 使能自动重装载预装载
+    htim2.Init.Prescaler = TIM1_PRESCALER;
+    htim2.Init.Period = TIM1_PERIOD;
+    htim2.Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED1;
+    htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
     HAL_TIM_PWM_Init(&htim2);
 
-    // TIM2输出TRGO
-    master_config.MasterOutputTrigger = TIM_TRGO_UPDATE;        // 触发adc和tim3
-    master_config.MasterSlaveMode = TIM_MASTERSLAVEMODE_ENABLE; // 使能主从模式
+    // 使用 TRGO_ENABLE，CEN置位瞬间就产生触发
+    master_config.MasterOutputTrigger = TIM_TRGO_ENABLE;
+    master_config.MasterSlaveMode = TIM_MASTERSLAVEMODE_ENABLE;
     HAL_TIMEx_MasterConfigSynchronization(&htim2, &master_config);
 
-    // TIM3: Slave
+    // TIM3
     htim3.Instance = TIM3;
-    htim3.Init.Prescaler = TIM1_PRESCALER;                        // 预分频
-    htim3.Init.Period = TIM1_PERIOD;                              // 自动重装载值
-    htim3.Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED1;      // 中心对齐模式1
-    htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;            // 时钟分频
-    htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE; // 使能自动重装载预装载
+    htim3.Init.Prescaler = TIM1_PRESCALER;
+    htim3.Init.Period = TIM1_PERIOD;
+    htim3.Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED1;
+    htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
     HAL_TIM_PWM_Init(&htim3);
 
-    // TIM3接收TIM2的触发
-    slave_config.SlaveMode = TIM_SLAVEMODE_TRIGGER; // 触发模式
-    slave_config.InputTrigger = TIM_TS_ITR1;        // 芯片手册确认
+    slave_config.SlaveMode = TIM_SLAVEMODE_TRIGGER;
+    slave_config.InputTrigger = TIM_TS_ITR1;  // TIM3的ITR1 = TIM2
     HAL_TIM_SlaveConfigSynchro(&htim3, &slave_config);
 
     // PWM通道配置
-    tim_oc_init_struct.OCMode = TIM_OCMODE_PWM1;         // PWM模式1
-    tim_oc_init_struct.OCPolarity = TIM_OCPOLARITY_HIGH; // 输出极性高
-    tim_oc_init_struct.OCFastMode = TIM_OCFAST_DISABLE;  // 关闭快速模式
+    tim_oc_init_struct.OCMode = TIM_OCMODE_PWM1;
+    tim_oc_init_struct.OCPolarity = TIM_OCPOLARITY_HIGH;
+    tim_oc_init_struct.OCFastMode = TIM_OCFAST_DISABLE;
     tim_oc_init_struct.Pulse = TIM1_PERIOD / 2;
 
     HAL_TIM_PWM_ConfigChannel(&htim2, &tim_oc_init_struct, TIM_CHANNEL_1);
     HAL_TIM_PWM_ConfigChannel(&htim3, &tim_oc_init_struct, TIM_CHANNEL_1);
     HAL_TIM_PWM_ConfigChannel(&htim3, &tim_oc_init_struct, TIM_CHANNEL_2);
 
-    // 先启动从定时器通道，但不会真正跑，等主触发
-    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
 
-    // 最后启动主定时器，TIM2一启动，TIM3同步启动
+    // TIM3 只开通道输出，不启动计数器（不设CEN）
+    TIM3->CCER |= (TIM_CCER_CC1E | TIM_CCER_CC2E);
+    // 此时 TIM3 的 CEN=0，等待 TIM2 触发
+
+    // 确保两个计数器都从0开始
+    TIM2->CNT = 0;
+    TIM3->CNT = 0;
+
+    // 启动 TIM2 → CEN=1 → TRGO_ENABLE触发 → TIM3硬件自动CEN=1
     HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+
+    // 同步启动后，将TRGO改为UPDATE用于ADC触发
+    TIM2->CR2 = (TIM2->CR2 & ~TIM_CR2_MMS) | TIM_TRGO_UPDATE;
 }
+
 
 void tim_set_pwm_duty(float duty1, float duty2, float duty3)
 {

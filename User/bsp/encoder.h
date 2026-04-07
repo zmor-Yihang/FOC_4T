@@ -46,14 +46,15 @@
 #define ENCODER_DIRECTION (-1)
 
 // 速度计算分频系数：`encoder_update_speed()` 必须在固定周期中断里按 `ENCODER_SPEED_SAMPLE_TIME` 对应的基础周期稳定调用一次，
-#define SPEED_CAL_DIV 10
+#define SPEED_CAL_DIV 20
 
 // 编码器速度基础采样周期，单位秒：它表示 `encoder_update_speed()` 两次相邻调用之间的理论时间间隔；
 // ENCODER_SPEED_SAMPLE_TIME = 电流环周期 * SPEED_CAL_DIV
-#define ENCODER_SPEED_SAMPLE_TIME 0.00005f
+#define ENCODER_SPEED_SAMPLE_TIME 0.0001f
 
 // 速度一阶低通滤波系数
-#define ENCODER_SPEED_FILTER_ALPHA 0.01f
+// y(k)=α*x(k)+(1-α)*y(k-1)
+#define ENCODER_SPEED_FILTER_ALPHA 0.1f
 
 void encoder_init(void);
 

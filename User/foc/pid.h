@@ -3,9 +3,16 @@
 
 #include "math.h"
 
+typedef enum
+{
+    PID_TYPE_CURRENT = 0,
+    PID_TYPE_SPEED
+} pid_type_t;
+
 /* PI控制器结构体 */
 typedef struct
 {
+    pid_type_t type;    /* PI类型 */
     float kp;           /* 比例系数 */
     float ki;           /* 积分系数 */
 
@@ -17,12 +24,12 @@ typedef struct
     float out_max;       /* 输出上限 */
     float integral_max;  /* 积分限幅 */
 
-    float kt;            /* Back-calculation 增益，通常取 1/kp */
+    float kt;            /* Back-calculation 增益 */
     float backcalc_error;/* 上一拍饱和误差 (u_clamped - u_unclamped) */
 } pid_controller_t;
 
 /* PI控制器初始化 */
-void pid_init(pid_controller_t *pid, float kp, float ki, float out_min, float out_max);
+void pid_init(pid_controller_t *pid, pid_type_t type, float kp, float ki, float out_min, float out_max);
 
 /* PI计算 */
 float pid_calculate(pid_controller_t *pid, float setpoint, float feedback);
