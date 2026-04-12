@@ -148,7 +148,7 @@ void usart2_init(void)
     hdma_usart2_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE; /* 外设字节对齐 */
     hdma_usart2_tx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;    /* 内存字节对齐 */
     hdma_usart2_tx.Init.Mode = DMA_NORMAL;                         /* 正常模式 */
-    hdma_usart2_tx.Init.Priority = DMA_PRIORITY_HIGH;              /* 高优先级 */
+    hdma_usart2_tx.Init.Priority = DMA_PRIORITY_MEDIUM;            /* 高优先级 */
     HAL_DMA_Init(&hdma_usart2_tx);                                 /* 初始化DMA */
 
     /* 配置DMA参数用于USART2 RX */
@@ -160,7 +160,7 @@ void usart2_init(void)
     hdma_usart2_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE; /* 外设字节对齐 */
     hdma_usart2_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;    /* 内存字节对齐 */
     hdma_usart2_rx.Init.Mode = DMA_CIRCULAR;                       /* 循环模式 */
-    hdma_usart2_rx.Init.Priority = DMA_PRIORITY_HIGH;              /* 高优先级 */
+    hdma_usart2_rx.Init.Priority = DMA_PRIORITY_MEDIUM;            /* 高优先级 */
     HAL_DMA_Init(&hdma_usart2_rx);                                 /* 初始化DMA */
 
     /* 将DMA句柄与UART句柄进行关联 */

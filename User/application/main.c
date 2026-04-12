@@ -17,7 +17,8 @@ int main(void)
 
     while (1)
     {
-        print_current_info();
+        printf("a = %d\r\n", a);
+        // print_current_info();
         // print_speed_info();
     }
 }

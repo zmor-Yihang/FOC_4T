@@ -1,13 +1,18 @@
 #include "i2c.h"
 
 I2C_HandleTypeDef hi2c3;
+DMA_HandleTypeDef hdma_i2c3_rx;
+
+volatile int a = 0;
+volatile int i2c3_err_cnt = 0;
 
 void i2c_init(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
 
     __HAL_RCC_GPIOC_CLK_ENABLE();
-
+    __HAL_RCC_DMAMUX1_CLK_ENABLE(); // DMA请求路由器
+    __HAL_RCC_DMA1_CLK_ENABLE();    // DMA1_Channel4 (I2C3_RX)
     __HAL_RCC_I2C3_CLK_ENABLE();
 
     // PC8: I2C3_SCL, PC9: I2C3_SDA
@@ -20,7 +25,7 @@ void i2c_init(void)
 
     hi2c3.Instance = I2C3;                                // 选择I2C3
     hi2c3.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;     // 不使能无拉伸模式, 即允许时钟拉伸
-    hi2c3.Init.Timing = 0x00702991;                       // 时序参数: 400kHz
+    hi2c3.Init.Timing = 0x00702991;                       // 时序参数: 400kHz?
     hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;  // 7位地址模式
     hi2c3.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE; // 单地址模式
     hi2c3.Init.OwnAddress1 = 0;                           // 自身地址
@@ -31,6 +36,27 @@ void i2c_init(void)
     HAL_I2C_Init(&hi2c3);
     HAL_I2CEx_ConfigAnalogFilter(&hi2c3, I2C_ANALOGFILTER_ENABLE);
     HAL_I2CEx_ConfigDigitalFilter(&hi2c3, 0);
+
+    hdma_i2c3_rx.Instance = DMA1_Channel4;
+    hdma_i2c3_rx.Init.Request = DMA_REQUEST_I2C3_RX;             // I2C3_RX作为DMA请求源
+    hdma_i2c3_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;          // 外设 -> 内存 方向
+    hdma_i2c3_rx.Init.PeriphInc = DMA_PINC_DISABLE;              // 外设地址不自增
+    hdma_i2c3_rx.Init.MemInc = DMA_MINC_ENABLE;                  // 内存地址自增
+    hdma_i2c3_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE; // 外设字节对齐 (8bit)
+    hdma_i2c3_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;    // 内存字节对齐 (8bit)
+    hdma_i2c3_rx.Init.Mode = DMA_NORMAL;                         // 正常模式
+    hdma_i2c3_rx.Init.Priority = DMA_PRIORITY_HIGH;              // 高优先级
+    HAL_DMA_Init(&hdma_i2c3_rx);
+
+    __HAL_LINKDMA(&hi2c3, hdmarx, hdma_i2c3_rx); // 将DMA句柄绑定到I2C3 RX
+
+    HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 2, 0); // 与串口DMA一致, 避免抢占FOC关键中断
+    HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);         // 使能DMA中断
+
+    HAL_NVIC_SetPriority(I2C3_EV_IRQn, 2, 1);
+    HAL_NVIC_EnableIRQ(I2C3_EV_IRQn);
+    HAL_NVIC_SetPriority(I2C3_ER_IRQn, 2, 1);
+    HAL_NVIC_EnableIRQ(I2C3_ER_IRQn);
 }
 
 void i2c_write_bytes(uint16_t dev_addr, uint16_t reg, uint8_t *send_buffer, uint8_t len)
@@ -40,25 +66,39 @@ void i2c_write_bytes(uint16_t dev_addr, uint16_t reg, uint8_t *send_buffer, uint
 
 void i2c_read_bytes(uint16_t dev_addr, uint16_t reg, uint8_t *recv_buffer, uint8_t len)
 {
-    HAL_I2C_Mem_Read(&hi2c3, dev_addr, reg, I2C_MEMADD_SIZE_8BIT, recv_buffer, len, 1);
+    if (HAL_I2C_Mem_Read_DMA(&hi2c3, dev_addr, reg, I2C_MEMADD_SIZE_8BIT, recv_buffer, len) != HAL_OK)
+    {
+        i2c3_err_cnt++;
+    }
 }
 
-void i2c_scan_bus(void)
+void DMA1_Channel4_IRQHandler(void)
 {
-    HAL_StatusTypeDef ret;
-    uint8_t addr = 0x36;
+    HAL_DMA_IRQHandler(&hdma_i2c3_rx);
+}
 
-    printf("\r\n[I2C] probing 0x%02X...\r\n", addr);
+void I2C3_EV_IRQHandler(void)
+{
+    HAL_I2C_EV_IRQHandler(&hi2c3);
+}
 
-    ret = HAL_I2C_IsDeviceReady(&hi2c3, (uint16_t)(addr << 1), 5, 50);
+void I2C3_ER_IRQHandler(void)
+{
+    HAL_I2C_ER_IRQHandler(&hi2c3);
+}
 
-    if (ret == HAL_OK)
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
+{
+    if (hi2c->Instance == I2C3)
     {
-        printf("[I2C] found device at 0x%02X\r\n", addr);
+        a++;
     }
-    else
+}
+
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
+{
+    if (hi2c->Instance == I2C3)
     {
-        printf("[I2C] device 0x%02X not found\r\n", addr);
-        printf("[I2C] hi2c3.ErrorCode = 0x%08lX\r\n", hi2c3.ErrorCode);
+        i2c3_err_cnt++;
     }
 }
