@@ -16,8 +16,14 @@ static adc_offset_t adc_offset = {0};
 // 注入组中断回调函数指针
 static adc_injected_callback_p adc_injected_callback = NULL;
 
-// 注入组转换完成计数器
+// 注入组转换完成中断触发计数器
 static volatile uint32_t adc_injected_irq_count = 0;
+
+// 注入组用户回调实际执行计数器
+static volatile uint32_t adc_injected_callback_count = 0;
+
+// 注入组回调分频标志位，用于隔一次中断执行一次用户回调，降低FOC计算频率
+static uint8_t adc_injected_callback_flag = 0;
 
 /**
  * @brief  将 ADC 原始值转换为原始电压 (V)
@@ -68,7 +74,7 @@ static void adc1_calibrate_offset(void)
         sum_ia += (vout_a - ADC_REF_VOLTAGE); // 累加A相对参考电压的偏差
         sum_ib += (vout_b - ADC_REF_VOLTAGE); // 累加B相对参考电压的偏差
 
-        delay_us(ADC_CALIB_DELAY_US); // 采样间隔
+        HAL_Delay(ADC_CALIB_DELAY_MS); // 采样间隔
     }
 
     HAL_ADC_Stop_DMA(&hadc1); // 停止DMA采样
@@ -109,6 +115,7 @@ void adc_init(void)
     hdma_adc1.Init.Mode = DMA_CIRCULAR;                           // 循环模式, 不断刷新缓冲区
     hdma_adc1.Init.Priority = DMA_PRIORITY_VERY_HIGH;             // 最高优先级, 保证实时性
     HAL_DMA_Init(&hdma_adc1);
+
     __HAL_LINKDMA(&hadc1, DMA_Handle, hdma_adc1); // 将DMA句柄绑定到ADC1
 
     ADC_MultiModeTypeDef multimode = {0};
@@ -218,6 +225,11 @@ uint32_t adc_get_injected_irq_count(void)
     return adc_injected_irq_count;
 }
 
+uint32_t adc_get_injected_callback_count(void)
+{
+    return adc_injected_callback_count;
+}
+
 /**
  * @brief  注册注入组采样完成回调 (此回调中执行 FOC 计算)
  */
@@ -247,10 +259,12 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         adc_injected_buf[0] = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1); // 读取IA相注入通道值
         adc_injected_buf[1] = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_2); // 读取IB相注入通道值
 
-        if (adc_injected_callback != NULL) // 检查是否已注册回调
+        adc_injected_callback_flag ^= 1U; // 每次中断翻转标志位
+
+        if ((adc_injected_callback != NULL) && (adc_injected_callback_flag != 0U)) // 隔一次中断执行一次回调
         {
+            adc_injected_callback_count++;
             adc_injected_callback(); // 执行用户FOC电流环回调函数
         }
     }
 }
-
