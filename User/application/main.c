@@ -17,7 +17,7 @@ int main(void)
 
     while (1)
     {
-        printf("a = %d\r\n", a);
+        printf("a = %d，i2c3_err_cnt = %d\r\n", a, i2c3_err_cnt);
         // print_current_info();
         // print_speed_info();
     }
