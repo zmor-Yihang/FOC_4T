@@ -3,27 +3,11 @@
 // 编码器速度计算相关静态数据
 static struct
 {
-    uint16_t last_count;     /* 上一次角度计数值 */
-    int32_t accum_count;     /* 分频周期内累计计数增量 */
-    uint16_t sample_div_cnt; /* 速度计算分频计数 */
-    float speed_rpm;         /* 当前原始转速(RPM) */
-    float speed_rpm_lpf;     /* 低通滤波后的转速(RPM) */
-    uint8_t is_initialized;  /* 速度模块初始化标志 */
-} encoder_speed_data = {0, 0, 0, 0.0f, 0.0f, 0};
-
-void encoder_init(void)
-{
-    // 初始化AS5600所使用的I2C外设
-    i2c_init();
-
-    // 清零速度估算状态变量
-    encoder_speed_data.last_count = 0;
-    encoder_speed_data.accum_count = 0;
-    encoder_speed_data.sample_div_cnt = 0;
-    encoder_speed_data.speed_rpm = 0.0f;
-    encoder_speed_data.speed_rpm_lpf = 0.0f;
-    encoder_speed_data.is_initialized = 0;
-}
+    uint16_t raw_count_cached; /* 最近一次采样得到的原始计数缓存 */
+    float phase_est_count;     /* PLL相位估计值(单位:count) */
+    float speed_est_count_s;   /* PLL速度估计值(单位:count/s) */
+    float speed_rpm;           /* 当前原始转速(RPM) */
+} encoder_speed_data = {0, 0.0f, 0.0f, 0.0f};
 
 /**
  * @brief 读取AS5600原始角度计数值
@@ -43,60 +27,70 @@ static uint16_t encoder_get_raw_count(void)
     return raw_count;
 }
 
+void encoder_init(void)
+{
+    // 初始化AS5600所使用的I2C外设
+    i2c_init();
+
+    // init阶段先读取一次编码器并完成PLL状态对齐
+    uint16_t current_count = encoder_get_raw_count();
+
+    // 初始化速度估算状态变量
+    encoder_speed_data.raw_count_cached = current_count;
+    encoder_speed_data.phase_est_count = (float)current_count;
+    encoder_speed_data.speed_est_count_s = 0.0f;
+    encoder_speed_data.speed_rpm = 0.0f;
+}
+
 /**
  * @brief 更新编码器转速估算值
  * @note  需要在固定周期定时中断中调用
  */
-void encoder_update_speed(void)
+void encoder_update(void)
 {
     // 读取当前原始角度计数值
     uint16_t current_count = encoder_get_raw_count();
+    encoder_speed_data.raw_count_cached = current_count;
 
-    // 首次调用时仅记录初值，不计算速度
-    if (!encoder_speed_data.is_initialized)
+    // PLL: 根据测量相位与估计相位的误差，联合修正相位和速度
+    float phase_error = (float)current_count - encoder_speed_data.phase_est_count;
+    float half_cpr = ENCODER_CPR * 0.5f;
+
+    // 处理过零点误差，保证相位误差为最短路径
+    if (phase_error > half_cpr)
     {
-        encoder_speed_data.last_count = current_count;
-        encoder_speed_data.accum_count = 0;
-        encoder_speed_data.sample_div_cnt = 0;
-        encoder_speed_data.speed_rpm = 0.0f;
-        encoder_speed_data.speed_rpm_lpf = 0.0f;
-        encoder_speed_data.is_initialized = 1;
-        return;
+        phase_error -= ENCODER_CPR;
+    }
+    else if (phase_error < -half_cpr)
+    {
+        phase_error += ENCODER_CPR;
     }
 
-    // 计算当前采样周期内的计数增量
-    int32_t delta_count = (int32_t)current_count - (int32_t)encoder_speed_data.last_count;
+    // 速度环积分项：根据相位误差更新速度估计(count/s)
+    encoder_speed_data.speed_est_count_s += ENCODER_PLL_KI * phase_error * ENCODER_SPEED_SAMPLE_TIME;
 
-    // 处理过零点跳变，保证取最短路径增量
-    if (delta_count > (int32_t)(ENCODER_CPR / 2.0f))
+    // 限幅避免异常采样导致速度估计失控
+    if (encoder_speed_data.speed_est_count_s > ENCODER_PLL_MAX_SPEED_COUNT_S)
     {
-        delta_count -= (int32_t)ENCODER_CPR;
+        encoder_speed_data.speed_est_count_s = ENCODER_PLL_MAX_SPEED_COUNT_S;
     }
-    else if (delta_count < -(int32_t)(ENCODER_CPR / 2.0f))
+    else if (encoder_speed_data.speed_est_count_s < -ENCODER_PLL_MAX_SPEED_COUNT_S)
     {
-        delta_count += (int32_t)ENCODER_CPR;
-    }
-
-    // 根据系统定义的正方向对速度增量做符号修正
-    delta_count *= ENCODER_DIRECTION;
-
-    // 分频累加计数增量，达到设定窗口后再更新一次速度
-    encoder_speed_data.accum_count += delta_count;
-    encoder_speed_data.sample_div_cnt++;
-
-    if (encoder_speed_data.sample_div_cnt >= SPEED_CAL_DIV)
-    {
-        float sample_time = ENCODER_SPEED_SAMPLE_TIME * (float)encoder_speed_data.sample_div_cnt;
-
-        encoder_speed_data.speed_rpm = ((float)encoder_speed_data.accum_count / ENCODER_CPR) * 60.0f / sample_time;
-        encoder_speed_data.speed_rpm_lpf = ENCODER_SPEED_FILTER_ALPHA * encoder_speed_data.speed_rpm + (1.0f - ENCODER_SPEED_FILTER_ALPHA) * encoder_speed_data.speed_rpm_lpf;
-
-        encoder_speed_data.accum_count = 0;
-        encoder_speed_data.sample_div_cnt = 0;
+        encoder_speed_data.speed_est_count_s = -ENCODER_PLL_MAX_SPEED_COUNT_S;
     }
 
-    // 保存本次计数值，供下次计算增量
-    encoder_speed_data.last_count = current_count;
+    // 相位环比例项+速度前馈项，更新相位估计(count)
+    encoder_speed_data.phase_est_count += (encoder_speed_data.speed_est_count_s + ENCODER_PLL_KP * phase_error) * ENCODER_SPEED_SAMPLE_TIME;
+
+    // 将估计相位限制到[0, CPR)范围
+    while (encoder_speed_data.phase_est_count >= ENCODER_CPR)
+    {
+        encoder_speed_data.phase_est_count -= ENCODER_CPR;
+    }
+    while (encoder_speed_data.phase_est_count < 0.0f)
+    {
+        encoder_speed_data.phase_est_count += ENCODER_CPR;
+    }
 }
 
 /**
@@ -107,8 +101,8 @@ float encoder_get_angle_rad(void)
 {
     float elec_angle;
 
-    // 读取当前原始编码器计数值，换算为电角度弧度值后，再按配置的方向系数做正负方向修正
-    elec_angle = ((float)encoder_get_raw_count() / ENCODER_CPR) * MOTOR_POLE_PAIRS * ENCODER_TWO_PI * ENCODER_DIRECTION;
+    // 使用最近一次采样缓存值换算电角度，避免重复I2C读取
+    elec_angle = ((float)encoder_speed_data.raw_count_cached / ENCODER_CPR) * MOTOR_POLE_PAIRS * ENCODER_TWO_PI * ENCODER_DIRECTION;
 
     // 将电角度限制到[0, 2π)范围内
     while (elec_angle >= ENCODER_TWO_PI)
@@ -125,11 +119,10 @@ float encoder_get_angle_rad(void)
 }
 
 /**
- * @brief 获取低通滤波后的转速
+ * @brief 获取转速
  * @return 最近一次更新得到的滤波转速，单位RPM
  */
 float encoder_get_speed_rpm(void)
 {
-    // 返回最近一次更新得到的滤波转速
-    return encoder_speed_data.speed_rpm_lpf;
+    return (encoder_speed_data.speed_est_count_s / ENCODER_CPR) * 60.0f * ENCODER_DIRECTION;
 }

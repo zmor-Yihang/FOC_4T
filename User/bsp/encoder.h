@@ -42,23 +42,21 @@
 #define ENCODER_TWO_PI 6.28318530718f
 
 // 编码器方向修正系数：当机械安装方向或电角度定义方向与FOC控制所需正方向相反时设为-1，
-// 相同则设为1；该系数会乘到编码器读数上，用于统一修正角度与转速符号方向
 #define ENCODER_DIRECTION (-1)
 
-// 速度计算分频系数：`encoder_update_speed()` 必须在固定周期中断里按 `ENCODER_SPEED_SAMPLE_TIME` 对应的基础周期稳定调用一次，
-#define SPEED_CAL_DIV 20
-
-// 编码器速度基础采样周期，单位秒：它表示 `encoder_update_speed()` 两次相邻调用之间的理论时间间隔；
-// ENCODER_SPEED_SAMPLE_TIME = 电流环周期 * SPEED_CAL_DIV
+// 编码器速度采样周期，单位秒：表示 encoder_update() 两次调用之间的固定时间间隔
 #define ENCODER_SPEED_SAMPLE_TIME 0.0001f
 
-// 速度一阶低通滤波系数
-// y(k)=α*x(k)+(1-α)*y(k-1)
-#define ENCODER_SPEED_FILTER_ALPHA 0.1f
+// 编码器速度PLL参数：
+#define ENCODER_PLL_KP 300.0f
+#define ENCODER_PLL_KI 40000.0f
+
+// PLL速度估计限幅(单位:count/s)，用于抑制异常采样导致的速度尖峰
+#define ENCODER_PLL_MAX_SPEED_COUNT_S 350000.0f
 
 void encoder_init(void);
 
-void encoder_update_speed(void);
+void encoder_update(void);
 float encoder_get_angle_rad(void);
 float encoder_get_speed_rpm(void);
 

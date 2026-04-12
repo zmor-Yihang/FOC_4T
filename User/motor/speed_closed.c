@@ -17,11 +17,13 @@ static float iq_temp = 0.0f;
 static float ia_temp = 0.0f;
 static float ib_temp = 0.0f;
 static float ic_temp = 0.0f;
+static float adc_inj_irq_hz_temp = 0.0f;
+static float adc_inj_callback_hz_temp = 0.0f;
 
 static void speed_closed_callback(void)
 {
     // 更新速度
-    encoder_update_speed();
+    encoder_update();
 
     // 获取角度和速度
     float angle_el = encoder_get_angle_rad() - foc_speed_closed_handle.angle_offset;
@@ -54,9 +56,9 @@ static void speed_closed_callback(void)
 void speed_closed_init(float speed_rpm)
 {
     // 初始化速度环 PID 控制器
-    pid_init(&pid_id, PID_TYPE_CURRENT, 2.7f, 0.148f, -U_DC / 2.0f, U_DC / 2.0f);
-    pid_init(&pid_iq, PID_TYPE_CURRENT, 2.7f, 0.148f, -U_DC / 2.0f, U_DC / 2.0f);
-    pid_init(&pid_speed, PID_TYPE_SPEED, 0.0001f, 0.00157f, -3.5f, 3.5f);
+    pid_init(&pid_id, PID_TYPE_CURRENT, 1.7f, 0.148f, -U_DC / 2.0f, U_DC / 2.0f);
+    pid_init(&pid_iq, PID_TYPE_CURRENT, 1.7f, 0.148f, -U_DC / 2.0f, U_DC / 2.0f);
+    pid_init(&pid_speed, PID_TYPE_SPEED, 0.002f, 0.00857f, -1.5f, 1.5f);
 
     // 初始化 FOC 控制句柄
     foc_init(&foc_speed_closed_handle, &pid_id, &pid_iq, &pid_speed);
@@ -74,6 +76,34 @@ void speed_closed_init(float speed_rpm)
 
 void print_speed_info(void)
 {
+    static uint32_t last_tick_ms = 0U;
+    static uint32_t last_irq_count = 0U;
+    static uint32_t last_callback_count = 0U;
+
+    uint32_t now_tick_ms = HAL_GetTick();
+    if (last_tick_ms == 0U)
+    {
+        last_tick_ms = now_tick_ms;
+        last_irq_count = adc_get_injected_irq_count();
+        last_callback_count = adc_get_injected_callback_count();
+    }
+    else
+    {
+        uint32_t delta_ms = now_tick_ms - last_tick_ms;
+        if (delta_ms >= 100U)
+        {
+            uint32_t irq_count = adc_get_injected_irq_count();
+            uint32_t callback_count = adc_get_injected_callback_count();
+
+            adc_inj_irq_hz_temp = ((float)(irq_count - last_irq_count) * 1000.0f) / (float)delta_ms;
+            adc_inj_callback_hz_temp = ((float)(callback_count - last_callback_count) * 1000.0f) / (float)delta_ms;
+
+            last_irq_count = irq_count;
+            last_callback_count = callback_count;
+            last_tick_ms = now_tick_ms;
+        }
+    }
+
     // 归一化角度到 [0, 2π) 范围
     float angle_normalized = fmodf(angle_el_temp, 2.0f * M_PI);
     if (angle_normalized < 0.0f)
@@ -83,6 +113,6 @@ void print_speed_info(void)
     // 转换为角度 (0-360°)
     float angle_deg = angle_normalized * 57.2958f;
 
-    float data[7] = {speed_rpm_temp, angle_deg, id_temp, iq_temp, ia_temp, ib_temp, ic_temp};
-    printf_vofa(data, 7);
+    float data[9] = {speed_rpm_temp, angle_deg, id_temp, iq_temp, ia_temp, ib_temp, ic_temp, adc_inj_irq_hz_temp, adc_inj_callback_hz_temp};
+    printf_vofa(data, 9);
 }

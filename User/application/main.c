@@ -12,12 +12,12 @@ int main(void)
     tim_init();
     adc_init();
 
-    // current_closed_init(0.0f, 0.1f);
-    speed_closed_init(2000);
+    current_closed_init(0.0f, 0.2f);
+    // speed_closed_init(2000);
 
     while (1)
     {
-        // print_current_info();
-        print_speed_info();
+        print_current_info();
+        // print_speed_info();
     }
 }
