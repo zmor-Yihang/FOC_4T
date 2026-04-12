@@ -14,7 +14,7 @@ extern TIM_HandleTypeDef htim3;
  * PWM频率: 170MHz / (1+0) / 8500*2) = 10kHz（中心对齐模式下ARR计两次）
  */
 #define TIM1_PRESCALER 0 /* 预分频值 */
-#define TIM1_PERIOD 8500 /* 自动重装载值（ARR） */
+#define TIM1_PERIOD 8499 /* 自动重装载值（ARR） */
 
 void tim_init(void);
 void tim_set_pwm_duty(float duty1, float duty2, float duty3);

@@ -11,7 +11,7 @@
 #include "encoder.h"
 
 // 对齐过程相关参数
-#define FOC_ALIGN_D_AXIS_VOLTAGE      (1.0f)
+#define FOC_ALIGN_D_AXIS_VOLTAGE      (0.3f)
 #define FOC_ALIGN_SETTLE_TIME_MS      (500U)
 #define FOC_ALIGN_SCAN_POINTS         (64U)
 #define FOC_ALIGN_SCAN_REPEAT         (2U)

@@ -79,7 +79,6 @@ void tim_init(void)
     TIM2->CR2 = (TIM2->CR2 & ~TIM_CR2_MMS) | TIM_TRGO_UPDATE;
 }
 
-
 void tim_set_pwm_duty(float duty1, float duty2, float duty3)
 {
     uint32_t compare1 = (uint32_t)(duty1 * TIM1_PERIOD);

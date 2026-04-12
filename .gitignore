@@ -1,8 +1,8 @@
 # dot files
-/.vscode/launch.json
-/.settings
-/.eide/log
-/.eide.usr.ctx.json
+# /.vscode/launch.json
+# /.settings
+# /.eide/log
+# /.eide.usr.ctx.json
 
 # project out
 /build
@@ -13,6 +13,6 @@
 
 # eide template
 *.ept
-*.eide-template
-.eide/eide.yml
+# *.eide-template
+# .eide/eide.yml
 
