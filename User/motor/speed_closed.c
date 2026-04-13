@@ -7,7 +7,7 @@ static pid_controller_t pid_iq;
 
 static pid_controller_t pid_speed;
 
-static uint8_t speed_loop_divider = 20;
+static uint8_t speed_loop_divider = 10;
 
 // 打印用
 static float speed_rpm_temp = 0.0f;
@@ -56,9 +56,10 @@ static void speed_closed_callback(void)
 void speed_closed_init(float speed_rpm)
 {
     // 初始化速度环 PID 控制器
-    pid_init(&pid_id, PID_TYPE_CURRENT, 1.7f, 0.148f, -U_DC / 2.0f, U_DC / 2.0f);
-    pid_init(&pid_iq, PID_TYPE_CURRENT, 1.7f, 0.148f, -U_DC / 2.0f, U_DC / 2.0f);
-    pid_init(&pid_speed, PID_TYPE_SPEED, 0.002f, 0.00857f, -1.5f, 1.5f);
+    pid_init(&pid_id, PID_TYPE_CURRENT, 8.1f, 0.198f, -U_DC / 2.0f, U_DC / 2.0f);
+    pid_init(&pid_iq, PID_TYPE_CURRENT, 8.1f, 0.198f, -U_DC / 2.0f, U_DC / 2.0f);
+
+    pid_init(&pid_speed, PID_TYPE_SPEED, 0.0166f, 0.041f, -1.5f, 1.5f);
 
     // 初始化 FOC 控制句柄
     foc_init(&foc_speed_closed_handle, &pid_id, &pid_iq, &pid_speed);

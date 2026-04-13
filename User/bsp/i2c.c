@@ -2,6 +2,9 @@
 
 I2C_HandleTypeDef hi2c3;
 
+static volatile uint8_t i2c3_read_busy = 0U;
+static volatile uint8_t i2c3_read_done = 0U;
+
 void i2c_init(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -20,7 +23,7 @@ void i2c_init(void)
 
     hi2c3.Instance = I2C3;                                // 选择I2C3
     hi2c3.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;     // 不使能无拉伸模式, 即允许时钟拉伸
-    hi2c3.Init.Timing = 0x00702991;                       // 时序参数: 400kHz
+    hi2c3.Init.Timing = 0x00802172;                       // 时序参数: 400kHz
     hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;  // 7位地址模式
     hi2c3.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE; // 单地址模式
     hi2c3.Init.OwnAddress1 = 0;                           // 自身地址
@@ -31,11 +34,9 @@ void i2c_init(void)
     HAL_I2C_Init(&hi2c3);
     HAL_I2CEx_ConfigAnalogFilter(&hi2c3, I2C_ANALOGFILTER_ENABLE);
     HAL_I2CEx_ConfigDigitalFilter(&hi2c3, 0);
-}
 
-void i2c_write_bytes(uint16_t dev_addr, uint16_t reg, uint8_t *send_buffer, uint8_t len)
-{
-    HAL_I2C_Mem_Write(&hi2c3, dev_addr, reg, I2C_MEMADD_SIZE_8BIT, send_buffer, len, 1);
+    HAL_NVIC_SetPriority(I2C3_EV_IRQn, 1, 0);
+    HAL_NVIC_EnableIRQ(I2C3_EV_IRQn);
 }
 
 void i2c_read_bytes(uint16_t dev_addr, uint16_t reg, uint8_t *recv_buffer, uint8_t len)
@@ -43,22 +44,51 @@ void i2c_read_bytes(uint16_t dev_addr, uint16_t reg, uint8_t *recv_buffer, uint8
     HAL_I2C_Mem_Read(&hi2c3, dev_addr, reg, I2C_MEMADD_SIZE_8BIT, recv_buffer, len, 1);
 }
 
-void i2c_scan_bus(void)
+HAL_StatusTypeDef i2c_read_bytes_it(uint16_t dev_addr, uint16_t reg, uint8_t *recv_buffer, uint8_t len)
 {
-    HAL_StatusTypeDef ret;
-    uint8_t addr = 0x36;
+    HAL_StatusTypeDef status;
 
-    printf("\r\n[I2C] probing 0x%02X...\r\n", addr);
-
-    ret = HAL_I2C_IsDeviceReady(&hi2c3, (uint16_t)(addr << 1), 5, 50);
-
-    if (ret == HAL_OK)
+    if (i2c3_read_busy != 0U)
     {
-        printf("[I2C] found device at 0x%02X\r\n", addr);
+        return HAL_BUSY;
     }
-    else
+
+    i2c3_read_done = 0U;
+    status = HAL_I2C_Mem_Read_IT(&hi2c3, dev_addr, reg, I2C_MEMADD_SIZE_8BIT, recv_buffer, len);
+
+    if (status == HAL_OK)
     {
-        printf("[I2C] device 0x%02X not found\r\n", addr);
-        printf("[I2C] hi2c3.ErrorCode = 0x%08lX\r\n", hi2c3.ErrorCode);
+        i2c3_read_busy = 1U;
+    }
+
+    return status;
+}
+
+uint8_t i2c_read_is_busy(void)
+{
+    return i2c3_read_busy;
+}
+
+uint8_t i2c_read_is_done(void)
+{
+    return i2c3_read_done;
+}
+
+void i2c_read_clear_done_flag(void)
+{
+    i2c3_read_done = 0U;
+}
+
+void I2C3_EV_IRQHandler(void)
+{
+    HAL_I2C_EV_IRQHandler(&hi2c3);
+}
+
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
+{
+    if (hi2c->Instance == I2C3)
+    {
+        i2c3_read_busy = 0U;
+        i2c3_read_done = 1U;
     }
 }

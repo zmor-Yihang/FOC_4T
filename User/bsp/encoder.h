@@ -48,8 +48,8 @@
 #define ENCODER_SPEED_SAMPLE_TIME 0.0001f
 
 // 编码器速度PLL参数：
-#define ENCODER_PLL_KP 300.0f
-#define ENCODER_PLL_KI 40000.0f
+#define ENCODER_PLL_KP 640.0f
+#define ENCODER_PLL_KI 102400.0f
 
 // PLL速度估计限幅(单位:count/s)，用于抑制异常采样导致的速度尖峰
 #define ENCODER_PLL_MAX_SPEED_COUNT_S 350000.0f
