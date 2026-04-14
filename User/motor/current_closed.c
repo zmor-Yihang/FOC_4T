@@ -12,16 +12,21 @@ static dq_t i_dq_temp = {
 };
 
 static float speed_temp = 0.0f;
+static float angle_el_temp = 0.0f;
+static float pll_angle_el_temp = 0.0f;
 static float adc_inj_irq_hz_temp = 0.0f;
 static float adc_inj_callback_hz_temp = 0.0f;
+static float v_d_out_temp = 0.0f;
+static float v_q_out_temp = 0.0f;
 
 // 电流闭环模式回调
 static void current_closed_callback(void)
 {
     encoder_update();
 
-    // 计算角度
-    float angle_el = encoder_get_angle_rad() - foc_current_closed_handle.angle_offset;
+    // 控制使用PLL估计角度；原始角度只用于调试观察
+    float angle_raw = encoder_get_angle_rad() - foc_current_closed_handle.angle_offset;
+    float angle_el = encoder_get_pll_angle_rad() - foc_current_closed_handle.angle_offset;
 
     // 获取电流反馈值
     adc_values_t adc_values;
@@ -37,9 +42,15 @@ static void current_closed_callback(void)
     // 打印用
     i_dq_temp = i_dq;
     speed_temp = encoder_get_speed_rpm();
+    angle_el_temp = angle_raw;
+    pll_angle_el_temp = angle_el;
 
     // 电流闭环
     foc_current_loop_run(&foc_current_closed_handle, i_dq, angle_el);
+
+    // 打印用 Ud/Uq
+    v_d_out_temp = foc_current_closed_handle.v_d_out;
+    v_q_out_temp = foc_current_closed_handle.v_q_out;
 }
 
 void current_closed_init(float id, float iq)
@@ -92,6 +103,7 @@ void print_current_info(void)
         }
     }
 
-    float data[5] = {i_dq_temp.d, i_dq_temp.q, speed_temp, adc_inj_irq_hz_temp, adc_inj_callback_hz_temp};
-    printf_vofa(data, 5);
+    float data[9] = {i_dq_temp.d, i_dq_temp.q, speed_temp, angle_el_temp, pll_angle_el_temp, adc_inj_irq_hz_temp, adc_inj_callback_hz_temp,
+                     v_d_out_temp, v_q_out_temp};
+    printf_vofa(data, 9);
 }

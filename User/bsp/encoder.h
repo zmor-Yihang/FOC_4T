@@ -3,6 +3,7 @@
 
 #include "stm32g4xx_hal.h"
 #include "motor_config.h"
+#include "angle_utils.h"
 #include "i2c.h"
 
 // AS5600寄存器地址定义
@@ -42,22 +43,26 @@
 #define ENCODER_TWO_PI 6.28318530718f
 
 // 编码器方向修正系数：当机械安装方向或电角度定义方向与FOC控制所需正方向相反时设为-1，
+// 注意：此值必须与 foc_alignment() 的扫描方向一致，否则零点标定会失效
 #define ENCODER_DIRECTION (-1)
 
 // 编码器速度采样周期，单位秒：表示 encoder_update() 两次调用之间的固定时间间隔
 #define ENCODER_SPEED_SAMPLE_TIME 0.0001f
 
-// 编码器速度PLL参数：
-#define ENCODER_PLL_KP 64000.0f
-#define ENCODER_PLL_KI 10240000.0f
+// 编码器速度PLL参数：阻尼比1, 带宽200Hz
+#define ENCODER_PLL_KP 2513.0f
+#define ENCODER_PLL_KI 1.58e6
 
-// PLL速度估计限幅(单位:count/s)，用于抑制异常采样导致的速度尖峰
-#define ENCODER_PLL_MAX_SPEED_COUNT_S 350000.0f
+// PLL速度估计限幅，用于抑制异常采样导致的速度尖峰
+#define ENCODER_PLL_MAX_SPEED 3600.0f // 电角速度，单位rad/s
 
 void encoder_init(void);
 
 void encoder_update(void);
 float encoder_get_angle_rad(void);
+float encoder_get_angle_rad_blocking(void);
+void encoder_sync_pll_to_current_angle(void);
+float encoder_get_pll_angle_rad(void);
 float encoder_get_speed_rpm(void);
 
 #endif /* encoder.h */

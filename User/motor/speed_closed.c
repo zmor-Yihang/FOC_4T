@@ -12,6 +12,7 @@ static uint8_t speed_loop_divider = 10;
 // 打印用
 static float speed_rpm_temp = 0.0f;
 static float angle_el_temp = 0.0f;
+static float pll_angle_el_temp = 0.0f;
 static float id_temp = 0.0f;
 static float iq_temp = 0.0f;
 static float ia_temp = 0.0f;
@@ -19,14 +20,19 @@ static float ib_temp = 0.0f;
 static float ic_temp = 0.0f;
 static float adc_inj_irq_hz_temp = 0.0f;
 static float adc_inj_callback_hz_temp = 0.0f;
+static float target_iq_temp = 0.0f;
+static float v_d_out_temp = 0.0f;
+static float v_q_out_temp = 0.0f;
+static float v_mag_temp = 0.0f;
 
 static void speed_closed_callback(void)
 {
     // 更新速度
     encoder_update();
 
-    // 获取角度和速度
-    float angle_el = encoder_get_angle_rad() - foc_speed_closed_handle.angle_offset;
+    // 控制使用PLL估计角度；原始角度只用于调试观察
+    float angle_raw = encoder_get_angle_rad() - foc_speed_closed_handle.angle_offset;
+    float angle_el = encoder_get_pll_angle_rad() - foc_speed_closed_handle.angle_offset;
     float speed_feedback = encoder_get_speed_rpm();
 
     // 获取电流反馈值
@@ -47,10 +53,16 @@ static void speed_closed_callback(void)
     ib_temp = i_abc.b;
     ic_temp = i_abc.c;
     speed_rpm_temp = speed_feedback;
-    angle_el_temp = angle_el;
+    angle_el_temp = angle_raw;
+    pll_angle_el_temp = angle_el;
 
     // 速度闭环
     foc_speed_loop_run(&foc_speed_closed_handle, i_dq, angle_el, speed_feedback, speed_loop_divider);
+
+    target_iq_temp = foc_speed_closed_handle.target_iq;
+    v_d_out_temp = foc_speed_closed_handle.v_d_out;
+    v_q_out_temp = foc_speed_closed_handle.v_q_out;
+    v_mag_temp = sqrtf(v_d_out_temp * v_d_out_temp + v_q_out_temp * v_q_out_temp);
 }
 
 void speed_closed_init(float speed_rpm)
@@ -59,7 +71,7 @@ void speed_closed_init(float speed_rpm)
     pid_init(&pid_id, PID_TYPE_CURRENT, 8.1f, 0.198f, -U_DC / 2.0f, U_DC / 2.0f);
     pid_init(&pid_iq, PID_TYPE_CURRENT, 8.1f, 0.198f, -U_DC / 2.0f, U_DC / 2.0f);
 
-    pid_init(&pid_speed, PID_TYPE_SPEED, 0.0166f, 0.041f, -1.5f, 1.5f);
+    pid_init(&pid_speed, PID_TYPE_SPEED, 0.0082f, 0.001f, -1.5f, 1.5f);
 
     // 初始化 FOC 控制句柄
     foc_init(&foc_speed_closed_handle, &pid_id, &pid_iq, &pid_speed);
@@ -114,6 +126,15 @@ void print_speed_info(void)
     // 转换为角度 (0-360°)
     float angle_deg = angle_normalized * 57.2958f;
 
-    float data[9] = {speed_rpm_temp, angle_deg, id_temp, iq_temp, ia_temp, ib_temp, ic_temp, adc_inj_irq_hz_temp, adc_inj_callback_hz_temp};
-    printf_vofa(data, 9);
+    // PLL估计电角度也归一化并转换到角度制
+    float pll_angle_normalized = fmodf(pll_angle_el_temp, 2.0f * M_PI);
+    if (pll_angle_normalized < 0.0f)
+    {
+        pll_angle_normalized += 2.0f * M_PI;
+    }
+    float pll_angle_deg = pll_angle_normalized * 57.2958f;
+
+    float data[14] = {speed_rpm_temp, angle_deg, pll_angle_deg, id_temp, iq_temp, ia_temp, ib_temp, ic_temp,
+                      adc_inj_irq_hz_temp, adc_inj_callback_hz_temp, target_iq_temp, v_d_out_temp, v_q_out_temp, v_mag_temp};
+    printf_vofa(data, 14);
 }

@@ -1,4 +1,5 @@
 #include "tim.h"
+#include "motor_config.h"
 
 TIM_HandleTypeDef htim2; // TIM2句柄
 TIM_HandleTypeDef htim3; // TIM3句柄
@@ -50,7 +51,7 @@ void tim_init(void)
     HAL_TIM_PWM_Init(&htim3);
 
     slave_config.SlaveMode = TIM_SLAVEMODE_TRIGGER;
-    slave_config.InputTrigger = TIM_TS_ITR1;  // TIM3的ITR1 = TIM2
+    slave_config.InputTrigger = TIM_TS_ITR1; // TIM3的ITR1 = TIM2
     HAL_TIM_SlaveConfigSynchro(&htim3, &slave_config);
 
     // PWM通道配置
@@ -62,7 +63,6 @@ void tim_init(void)
     HAL_TIM_PWM_ConfigChannel(&htim2, &tim_oc_init_struct, TIM_CHANNEL_1);
     HAL_TIM_PWM_ConfigChannel(&htim3, &tim_oc_init_struct, TIM_CHANNEL_1);
     HAL_TIM_PWM_ConfigChannel(&htim3, &tim_oc_init_struct, TIM_CHANNEL_2);
-
 
     // TIM3 只开通道输出，不启动计数器（不设CEN）
     TIM3->CCER |= (TIM_CCER_CC1E | TIM_CCER_CC2E);

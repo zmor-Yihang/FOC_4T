@@ -53,11 +53,9 @@ void foc_alignment(foc_t *handle)
     dq_t u_dq = {.d = FOC_ALIGN_D_AXIS_VOLTAGE, .q = 0.0f};
 
     /* 先建立稳定磁场 */
-    {
-        alphabeta_t alpha_beta = ipark_transform(u_dq, 0.0f);
-        abc_t duty_abc = svpwm_update(alpha_beta);
-        tim_set_pwm_duty(duty_abc.a, duty_abc.b, duty_abc.c);
-    }
+    alphabeta_t alpha_beta = ipark_transform(u_dq, 0.0f);
+    abc_t duty_abc = svpwm_update(alpha_beta);
+    tim_set_pwm_duty(duty_abc.a, duty_abc.b, duty_abc.c);
 
     HAL_Delay(FOC_ALIGN_SETTLE_TIME_MS);
 
@@ -78,8 +76,8 @@ void foc_alignment(foc_t *handle)
 
             HAL_Delay(FOC_ALIGN_SAMPLE_INTERVAL_MS);
 
-            angle_meas = encoder_get_angle_rad();
-            offset_sample = foc_wrap_angle(angle_cmd - angle_meas);
+            angle_meas = encoder_get_angle_rad_blocking();
+            offset_sample = foc_wrap_angle(angle_meas - angle_cmd);
 
             fast_sin_cos(offset_sample, &sin_offset, &cos_offset);
             sin_sum += sin_offset;
@@ -87,15 +85,17 @@ void foc_alignment(foc_t *handle)
         }
 
         /* 每圈结束后回到零角，减少下一圈起点跳变 */
-        {
-            alphabeta_t alpha_beta = ipark_transform(u_dq, 0.0f);
-            abc_t duty_abc = svpwm_update(alpha_beta);
-            tim_set_pwm_duty(duty_abc.a, duty_abc.b, duty_abc.c);
-            HAL_Delay(FOC_ALIGN_SETTLE_TIME_MS);
-        }
+        alphabeta_t alpha_beta = ipark_transform(u_dq, 0.0f);
+        abc_t duty_abc = svpwm_update(alpha_beta);
+        tim_set_pwm_duty(duty_abc.a, duty_abc.b, duty_abc.c);
+        HAL_Delay(FOC_ALIGN_SETTLE_TIME_MS);
     }
 
     handle->angle_offset = foc_wrap_angle(atan2f(sin_sum, cos_sum));
+
+    /* 最后一圈已经回到零角并完成稳定等待，这里再读一次当前角度并同步PLL状态 */
+    encoder_get_angle_rad_blocking();
+    encoder_sync_pll_to_current_angle();
 
     /* 关闭PWM输出 */
     tim_set_pwm_duty(0.5f, 0.5f, 0.5f);
@@ -120,17 +120,15 @@ void foc_current_loop_run(foc_t *handle, dq_t i_dq, float angle_el)
     handle->v_q_out = v_q_unsat;
 
     /* dq 电压矢量联合限幅，适配 SVPWM */
-    {
-        float v_limit = U_DC * FOC_VOLTAGE_LIMIT_SVPWM_SCALE;
-        float v_mag_sq = handle->v_d_out * handle->v_d_out + handle->v_q_out * handle->v_q_out;
-        float v_limit_sq = v_limit * v_limit;
+    float v_limit = U_DC * FOC_VOLTAGE_LIMIT_SVPWM_SCALE;
+    float v_mag_sq = handle->v_d_out * handle->v_d_out + handle->v_q_out * handle->v_q_out;
+    float v_limit_sq = v_limit * v_limit;
 
-        if (v_mag_sq > v_limit_sq)
-        {
-            float scale = v_limit / sqrtf(v_mag_sq);
-            handle->v_d_out *= scale;
-            handle->v_q_out *= scale;
-        }
+    if (v_mag_sq > v_limit_sq)
+    {
+        float scale = v_limit / sqrtf(v_mag_sq);
+        handle->v_d_out *= scale;
+        handle->v_q_out *= scale;
     }
 
     handle->pid_id->backcalc_error = v_d_unsat - handle->v_d_out;

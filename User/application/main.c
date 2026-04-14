@@ -7,13 +7,13 @@ int main(void)
     usart2_init();
 
     gpio_init();
-    gpio_m1_enable();
     encoder_init();
     tim_init();
     adc_init();
+    gpio_m1_enable();
 
-    current_closed_init(0.0f, 0.5f);
-    // speed_closed_init(2000);
+    current_closed_init(0.0f, 1.1f);
+    // speed_closed_init(2200);
 
     while (1)
     {

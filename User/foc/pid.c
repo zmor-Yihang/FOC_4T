@@ -16,7 +16,7 @@ void pid_init(pid_controller_t *pid, pid_type_t type, float kp, float ki, float 
     pid->kt = ki;
     pid->backcalc_error = 0.0f;
 
-    // ★ 积分限幅要足够大，不要限制 back-calc 的收敛
+    // 积分限幅要足够大，不要限制 back-calc 的收敛
     pid->integral_max = fmaxf(fabsf(out_min), fabsf(out_max));
 }
 

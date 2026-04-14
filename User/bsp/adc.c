@@ -1,4 +1,5 @@
 #include "adc.h"
+#include "motor_config.h"
 
 // ADC1 句柄
 ADC_HandleTypeDef hadc1;
@@ -43,12 +44,15 @@ static inline float adc_raw_to_voltage(uint16_t adc_raw)
  */
 static void adc_value_convert(uint16_t *adc_buf, adc_values_t *out)
 {
-    float vout_a = adc_raw_to_voltage(adc_buf[0]); // A相 INA240 输出电压
-    float vout_b = adc_raw_to_voltage(adc_buf[1]); // B相 INA240 输出电压
+    float vout_a = adc_raw_to_voltage(adc_buf[0]);                                       // A相 INA240 输出电压
+    float vout_b = adc_raw_to_voltage(adc_buf[1]);                                       // B相 INA240 输出电压
+    float ia_hw = (vout_a - ADC_REF_VOLTAGE - adc_offset.ia_offset) * ADC_CURRENT_SCALE; // 硬件A相电流
+    float ib_hw = (vout_b - ADC_REF_VOLTAGE - adc_offset.ib_offset) * ADC_CURRENT_SCALE; // 硬件B相电流
+    float ic_hw = -(ia_hw + ib_hw);                                                      // 硬件C相电流
 
-    out->ia = (vout_a - ADC_REF_VOLTAGE - adc_offset.ia_offset) * ADC_CURRENT_SCALE; // A相电流 = (输出电压 - 参考电压 - 零点偏移) × 电流换算系数
-    out->ib = (vout_b - ADC_REF_VOLTAGE - adc_offset.ib_offset) * ADC_CURRENT_SCALE; // B相电流
-    out->ic = -(out->ia + out->ib);                                                  // ia + ib + ic = 0
+    out->ia = ia_hw;
+    out->ib = ib_hw;
+    out->ic = ic_hw;
 }
 
 /**
