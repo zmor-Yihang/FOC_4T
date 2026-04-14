@@ -168,11 +168,11 @@ void usart2_init(void)
     __HAL_LINKDMA(&huart2, hdmarx, hdma_usart2_rx);
 
     /* 配置DMA和USART2相关中断的优先级和使能 */
-    HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 2, 0); /* 设置DMA1通道1(TX)中断优先级 */
+    HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 5, 0); /* 设置DMA1通道1(TX)中断优先级 */
     HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);         /* 使能DMA1通道1(TX)中断 */
-    HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 2, 0); /* 设置DMA1通道2(RX)中断优先级 */
+    HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 5, 0); /* 设置DMA1通道2(RX)中断优先级 */
     HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);         /* 使能DMA1通道2(RX)中断 */
-    HAL_NVIC_SetPriority(USART2_IRQn, 3, 0);        /* 设置USART2中断优先级 */
+    HAL_NVIC_SetPriority(USART2_IRQn, 6, 0);        /* 设置USART2中断优先级 */
     HAL_NVIC_EnableIRQ(USART2_IRQn);                /* 使能USART2中断 */
 
     /* 启动DMA方式接收，准备接收128字节数据到rx_buf_temp */

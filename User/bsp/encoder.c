@@ -43,21 +43,22 @@ static uint16_t encoder_get_raw_count(void)
 {
     uint16_t raw_count;
 
-    if (i2c_read_is_done() != 0U)
+    switch (i2c_read_get_state())
     {
-        // 有新样本时优先消费已完成的异步接收缓冲区，并拼接出12位角度计数
+    case I2C_READ_STATE_DONE: // 有新样本时优先消费
         raw_count = encoder_build_raw_count(encoder_i2c_recv_buffer);
-        i2c_read_clear_done_flag();
-    }
-    else
-    {
-        // 当前周期若还未收到新样本，则退化为速度预测值
+        i2c_read_set_idle();
+        break;
+
+    case I2C_READ_STATE_IDLE:
+    case I2C_READ_STATE_BUSY: // 当前周期若还未收到新样本，则退化为速度预测值
         raw_count = encoder_predict_raw_count();
+        break;
     }
 
-    if (i2c_read_is_busy() == 0U)
+    if (i2c_read_get_state() == I2C_READ_STATE_IDLE)
     {
-        (void)i2c_read_bytes_it(AS5600_I2C_ADDR, AS5600_REG_RAW_ANGLE_H, encoder_i2c_recv_buffer, 2);
+        i2c_read_bytes_it(AS5600_I2C_ADDR, AS5600_REG_RAW_ANGLE_H, encoder_i2c_recv_buffer, 2);
     }
 
     return raw_count;
@@ -79,7 +80,7 @@ void encoder_init(void)
     encoder_speed_data.speed_rpm = 0.0f;
 
     // 提前发起第一次异步读取，供后续控制周期直接消费
-    (void)i2c_read_bytes_it(AS5600_I2C_ADDR, AS5600_REG_RAW_ANGLE_H, encoder_i2c_recv_buffer, 2);
+    i2c_read_bytes_it(AS5600_I2C_ADDR, AS5600_REG_RAW_ANGLE_H, encoder_i2c_recv_buffer, 2);
 }
 
 /**

@@ -179,7 +179,7 @@ void adc_init(void)
     HAL_ADCEx_InjectedConfigChannel(&hadc1, &injected);
 
     // ADC 中断配置 (注入组转换完成中断, 用于FOC电流环回调)
-    HAL_NVIC_SetPriority(ADC1_2_IRQn, 0, 0); // 抢占优先级0, 子优先级0
+    HAL_NVIC_SetPriority(ADC1_2_IRQn, 4, 0); // 抢占优先级0, 子优先级0
     HAL_NVIC_EnableIRQ(ADC1_2_IRQn);         // 使能ADC1/ADC2全局中断
 
     // ADC 内部校准, 消除ADC本身偏移误差
