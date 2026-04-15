@@ -20,7 +20,7 @@ static inline uint16_t encoder_build_raw_count(const uint8_t *recv_buffer)
  */
 static inline float encoder_count_to_elec_rad(float count)
 {
-    return count * ((ENCODER_TWO_PI * MOTOR_POLE_PAIRS) / ENCODER_CPR) * ENCODER_DIRECTION;
+    return (4096 - count) * ((ENCODER_TWO_PI * MOTOR_POLE_PAIRS) / ENCODER_CPR);
 }
 
 /**

@@ -12,7 +12,7 @@ int main(void)
     adc_init();
     gpio_m1_enable();
 
-    current_closed_init(0.0f, 1.1f);
+    current_closed_init(0.0f, 0.5f);
     // speed_closed_init(2200);
 
     while (1)

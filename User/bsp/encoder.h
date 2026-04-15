@@ -42,10 +42,6 @@
 #define ENCODER_CPR 4096
 #define ENCODER_TWO_PI 6.28318530718f
 
-// 编码器方向修正系数：当机械安装方向或电角度定义方向与FOC控制所需正方向相反时设为-1，
-// 注意：此值必须与 foc_alignment() 的扫描方向一致，否则零点标定会失效
-#define ENCODER_DIRECTION (-1)
-
 // 编码器速度采样周期，单位秒：表示 encoder_update() 两次调用之间的固定时间间隔
 #define ENCODER_SPEED_SAMPLE_TIME 0.0001f
 
