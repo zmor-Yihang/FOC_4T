@@ -25,7 +25,7 @@ typedef struct
     float integral_max;  /* 积分限幅 */
 
     float kt;            /* Back-calculation 增益 */
-    float backcalc_error;/* 上一拍饱和误差 (u_clamped - u_unclamped) */
+    float backcalc_error;/* 上一拍饱和误差 */
 } pid_controller_t;
 
 /* PI控制器初始化 */

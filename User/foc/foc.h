@@ -14,7 +14,7 @@
 #define FOC_ALIGN_D_AXIS_VOLTAGE      (0.3f)
 #define FOC_ALIGN_SETTLE_TIME_MS      (500U)
 #define FOC_ALIGN_SCAN_POINTS         (64U)
-#define FOC_ALIGN_SCAN_REPEAT         (7U)
+#define FOC_ALIGN_SCAN_REPEAT         (2U)
 #define FOC_ALIGN_SAMPLE_INTERVAL_MS  (20U)
 
 // SVPWM 电压矢量限幅比例, SVPWM 电压矢量限幅比例 (1/sqrt(3))

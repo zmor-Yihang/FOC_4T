@@ -61,6 +61,7 @@ void foc_alignment(foc_t *handle)
             HAL_Delay(FOC_ALIGN_SAMPLE_INTERVAL_MS);
 
             encoder_update();
+            HAL_Delay(1); // 
             angle_meas = encoder_get_encoder_angle();
             offset_sample = angle_wrap_0_2pi(angle_meas - angle_cmd);
 

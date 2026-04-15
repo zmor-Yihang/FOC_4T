@@ -45,8 +45,8 @@
 // 编码器速度采样周期，单位秒：表示 encoder_update() 两次调用之间的固定时间间隔
 #define ENCODER_SPEED_SAMPLE_TIME 0.0001f
 
-// 编码器速度PLL参数：阻尼比1, 带宽200Hz
-#define ENCODER_PLL_KP 2513.0f
+// 编码器速度PLL参数：阻尼比0.707, 带宽200Hz
+#define ENCODER_PLL_KP 1776.0f
 #define ENCODER_PLL_KI 1.58e6
 
 void encoder_init(void);

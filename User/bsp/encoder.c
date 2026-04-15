@@ -55,7 +55,7 @@ void encoder_init(void)
 {
     i2c_init();
     i2c_read_bytes_async(AS5600_I2C_ADDR, AS5600_REG_RAW_ANGLE_H, i2c_rx_buf, 2);
-    HAL_Delay(1);  // 确保I2C读写完成
+    HAL_Delay(1); // 确保I2C读写完成
 }
 
 /**
@@ -63,7 +63,8 @@ void encoder_init(void)
  */
 void encoder_update(void)
 {
-    encoder_get_current_elec_angle();                                         // 获取当前电角度
+    encoder_get_current_elec_angle(); // 获取当前电角度
+
     float phase_error = angle_wrap_pm_pi(current_elec_angle - pll_phase_rad); // 计算当前相位误差
 
     // 速度环积分项：根据电角度误差更新电角速度估计(rad/s)
@@ -98,33 +99,3 @@ float encoder_get_speed(void)
 {
     return (pll_speed_rad_s / (ENCODER_TWO_PI * MOTOR_POLE_PAIRS)) * 60.0f;
 }
-
-// /*-----------------------------------------------------------------*/
-// /**
-//  * @brief 阻塞读取一次AS5600原始角度并返回电角度
-//  * @return 当前电角度，范围[0, 2π)
-//  * @note  主要用于上电对齐阶段，确保每次取到实时角度
-//  */
-// float encoder_get_angle_rad_blocking(void)
-// {
-//     uint8_t raw_buf[2];
-//     uint16_t raw_cnt = 0;
-//     i2c_read_bytes_block(AS5600_I2C_ADDR, AS5600_REG_RAW_ANGLE_H, raw_buf, 2);
-//     raw_cnt = encoder_build_raw_count(raw_buf);
-
-//     return angle_wrap_0_2pi(encoder_count_to_elec_rad((float)raw_cnt));
-// }
-
-// /**
-//  * @brief 将PLL状态同步到当前编码器角度
-//  * @note  主要用于上电对齐结束后，避免速度估计从旧相位突跳
-//  */
-// void encoder_sync_pll_to_current_angle(void)
-// {
-//     pll_phase_rad = angle_wrap_0_2pi(encoder_count_to_elec_rad((float)raw_cnt));
-//     pll_speed_rad_s = 0.0f;
-
-//     // 对齐阶段可能残留一帧旧的异步读完成标志，这里清掉并重新拉起新样本
-//     i2c_read_set_idle();
-//     encoder_start_async_read_if_idle();
-// }
