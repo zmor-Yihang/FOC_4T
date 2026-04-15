@@ -49,16 +49,11 @@
 #define ENCODER_PLL_KP 2513.0f
 #define ENCODER_PLL_KI 1.58e6
 
-// PLL速度估计限幅，用于抑制异常采样导致的速度尖峰
-#define ENCODER_PLL_MAX_SPEED 3600.0f // 电角速度，单位rad/s
-
 void encoder_init(void);
-
 void encoder_update(void);
-float encoder_get_angle_rad(void);
-float encoder_get_angle_rad_blocking(void);
-void encoder_sync_pll_to_current_angle(void);
-float encoder_get_pll_angle_rad(void);
-float encoder_get_speed_rpm(void);
+
+float encoder_get_encoder_angle(void);
+float encoder_get_angle(void);
+float encoder_get_speed(void);
 
 #endif /* encoder.h */

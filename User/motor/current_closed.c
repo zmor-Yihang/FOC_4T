@@ -25,8 +25,8 @@ static void current_closed_callback(void)
     encoder_update();
 
     // 控制使用PLL估计角度；原始角度只用于调试观察
-    float angle_raw = angle_wrap_0_2pi(encoder_get_angle_rad() - foc_current_closed_handle.angle_offset);
-    float angle_el = angle_wrap_0_2pi(encoder_get_pll_angle_rad() - foc_current_closed_handle.angle_offset);
+    float angle_raw = angle_wrap_0_2pi(encoder_get_angle() - foc_current_closed_handle.angle_offset);
+    float angle_el = angle_wrap_0_2pi(encoder_get_encoder_angle() - foc_current_closed_handle.angle_offset);
 
     // 获取电流反馈值
     adc_values_t adc_values;
@@ -41,7 +41,7 @@ static void current_closed_callback(void)
 
     // 打印用
     i_dq_temp = i_dq;
-    speed_temp = encoder_get_speed_rpm();
+    speed_temp = encoder_get_speed();
     angle_el_temp = angle_raw;
     pll_angle_el_temp = angle_el;
 

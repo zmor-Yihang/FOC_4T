@@ -31,9 +31,9 @@ static void speed_closed_callback(void)
     encoder_update();
 
     // 控制使用PLL估计角度；原始角度只用于调试观察
-    float angle_raw = encoder_get_angle_rad() - foc_speed_closed_handle.angle_offset;
-    float angle_el = encoder_get_pll_angle_rad() - foc_speed_closed_handle.angle_offset;
-    float speed_feedback = encoder_get_speed_rpm();
+    float angle_raw = encoder_get_angle() - foc_speed_closed_handle.angle_offset;
+    float angle_el = encoder_get_encoder_angle() - foc_speed_closed_handle.angle_offset;
+    float speed_feedback = encoder_get_speed();
 
     // 获取电流反馈值
     adc_values_t adc_values;
@@ -71,7 +71,7 @@ void speed_closed_init(float speed_rpm)
     pid_init(&pid_id, PID_TYPE_CURRENT, 8.1f, 0.198f, -U_DC / 2.0f, U_DC / 2.0f);
     pid_init(&pid_iq, PID_TYPE_CURRENT, 8.1f, 0.198f, -U_DC / 2.0f, U_DC / 2.0f);
 
-    pid_init(&pid_speed, PID_TYPE_SPEED, 0.0082f, 0.001f, -1.5f, 1.5f);
+    pid_init(&pid_speed, PID_TYPE_SPEED, 0.0082f, 0.001f, -1.0f, 1.0f);
 
     // 初始化 FOC 控制句柄
     foc_init(&foc_speed_closed_handle, &pid_id, &pid_iq, &pid_speed);

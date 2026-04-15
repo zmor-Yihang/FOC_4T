@@ -2,7 +2,7 @@
 
 I2C_HandleTypeDef hi2c3;
 
-static volatile I2C_ReadState_t i2c3_read_state = I2C_READ_STATE_IDLE;
+static volatile I2C_ReadState_t i2c3_read_state = I2C_READ_STATE_DONE;
 
 void i2c_init(void)
 {
@@ -38,12 +38,12 @@ void i2c_init(void)
     HAL_NVIC_EnableIRQ(I2C3_EV_IRQn);
 }
 
-void i2c_read_bytes(uint16_t dev_addr, uint16_t reg, uint8_t *recv_buffer, uint8_t len)
+void i2c_read_bytes_block(uint16_t dev_addr, uint16_t reg, uint8_t *recv_buffer, uint8_t len)
 {
     HAL_I2C_Mem_Read(&hi2c3, dev_addr, reg, I2C_MEMADD_SIZE_8BIT, recv_buffer, len, 1);
 }
 
-void i2c_read_bytes_it(uint16_t dev_addr, uint16_t reg, uint8_t *recv_buffer, uint8_t len)
+void i2c_read_bytes_async(uint16_t dev_addr, uint16_t reg, uint8_t *recv_buffer, uint8_t len)
 {
     if (i2c3_read_state == I2C_READ_STATE_BUSY)
     {
@@ -58,9 +58,9 @@ I2C_ReadState_t i2c_read_get_state(void)
     return i2c3_read_state;
 }
 
-void i2c_read_set_idle(void)
+void i2c_read_set_state(I2C_ReadState_t current_state)
 {
-    i2c3_read_state = I2C_READ_STATE_IDLE;
+    i2c3_read_state = current_state;
 }
 
 void I2C3_EV_IRQHandler(void)
