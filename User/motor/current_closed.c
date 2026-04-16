@@ -16,6 +16,10 @@ static float angle_el_temp = 0.0f;
 static float pll_angle_el_temp = 0.0f;
 static float adc_inj_irq_hz_temp = 0.0f;
 static float adc_inj_callback_hz_temp = 0.0f;
+static float v_d_pi_temp = 0.0f;
+static float v_q_pi_temp = 0.0f;
+static float v_d_ff_temp = 0.0f;
+static float v_q_ff_temp = 0.0f;
 static float v_d_out_temp = 0.0f;
 static float v_q_out_temp = 0.0f;
 
@@ -25,8 +29,8 @@ static void current_closed_callback(void)
     encoder_update();
 
     // 控制使用PLL估计角度；原始角度只用于调试观察
-    float angle_raw = angle_wrap_0_2pi(encoder_get_angle() - foc_current_closed_handle.angle_offset);
-    float angle_el = angle_wrap_0_2pi(encoder_get_encoder_angle() - foc_current_closed_handle.angle_offset);
+    float angle_el = angle_wrap_0_2pi(encoder_get_angle() - foc_current_closed_handle.angle_offset);
+    float angle_raw = angle_wrap_0_2pi(encoder_get_encoder_angle() - foc_current_closed_handle.angle_offset);
 
     // 获取电流反馈值
     adc_values_t adc_values;
@@ -48,7 +52,11 @@ static void current_closed_callback(void)
     // 电流闭环
     foc_current_loop_run(&foc_current_closed_handle, i_dq, angle_el);
 
-    // 打印用 Ud/Uq
+    // 打印用 Ud/Uq 及其 PI/前馈分量
+    v_d_pi_temp = foc_current_closed_handle.v_d_pi;
+    v_q_pi_temp = foc_current_closed_handle.v_q_pi;
+    v_d_ff_temp = foc_current_closed_handle.v_d_ff;
+    v_q_ff_temp = foc_current_closed_handle.v_q_ff;
     v_d_out_temp = foc_current_closed_handle.v_d_out;
     v_q_out_temp = foc_current_closed_handle.v_q_out;
 }
@@ -103,7 +111,7 @@ void print_current_info(void)
         }
     }
 
-    float data[9] = {i_dq_temp.d, i_dq_temp.q, speed_temp, angle_el_temp, pll_angle_el_temp, adc_inj_irq_hz_temp, adc_inj_callback_hz_temp,
-                     v_d_out_temp, v_q_out_temp};
-    printf_vofa(data, 9);
+    float data[13] = {i_dq_temp.d, i_dq_temp.q, speed_temp, angle_el_temp, pll_angle_el_temp, adc_inj_irq_hz_temp, adc_inj_callback_hz_temp,
+                      v_d_pi_temp, v_q_pi_temp, v_d_ff_temp, v_q_ff_temp, v_d_out_temp, v_q_out_temp};
+    printf_vofa(data, 13);
 }

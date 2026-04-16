@@ -13,7 +13,7 @@ int main(void)
     gpio_m1_enable();
 
     // current_closed_init(0.0f, 0.5f);
-    speed_closed_init(2000);
+    speed_closed_init(1500);
 
     while (1)
     {

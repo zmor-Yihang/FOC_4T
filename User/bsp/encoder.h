@@ -49,6 +49,10 @@
 #define ENCODER_PLL_KP 1776.0f
 #define ENCODER_PLL_KI 1.58e6
 
+// PLL速度积分器限幅：机械转速上限(rpm)及对应电角速度上限(rad/s)
+#define ENCODER_PLL_SPEED_LIMIT_RPM 3000.0f
+#define ENCODER_PLL_SPEED_LIMIT_RAD_S ((ENCODER_PLL_SPEED_LIMIT_RPM / 60.0f) * ENCODER_TWO_PI * MOTOR_POLE_PAIRS)
+
 void encoder_init(void);
 void encoder_update(void);
 

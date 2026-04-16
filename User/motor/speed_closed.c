@@ -19,6 +19,10 @@ static float ia_temp = 0.0f;
 static float ib_temp = 0.0f;
 static float ic_temp = 0.0f;
 static float target_iq_temp = 0.0f;
+static float v_d_pi_temp = 0.0f;
+static float v_q_pi_temp = 0.0f;
+static float v_d_ff_temp = 0.0f;
+static float v_q_ff_temp = 0.0f;
 static float v_d_out_temp = 0.0f;
 static float v_q_out_temp = 0.0f;
 static float v_mag_temp = 0.0f;
@@ -58,6 +62,10 @@ static void speed_closed_callback(void)
     foc_speed_loop_run(&foc_speed_closed_handle, i_dq, angle_el, speed_feedback, speed_loop_divider);
 
     target_iq_temp = foc_speed_closed_handle.target_iq;
+    v_d_pi_temp = foc_speed_closed_handle.v_d_pi;
+    v_q_pi_temp = foc_speed_closed_handle.v_q_pi;
+    v_d_ff_temp = foc_speed_closed_handle.v_d_ff;
+    v_q_ff_temp = foc_speed_closed_handle.v_q_ff;
     v_d_out_temp = foc_speed_closed_handle.v_d_out;
     v_q_out_temp = foc_speed_closed_handle.v_q_out;
     v_mag_temp = sqrtf(v_d_out_temp * v_d_out_temp + v_q_out_temp * v_q_out_temp);
@@ -104,7 +112,7 @@ void print_speed_info(void)
     }
     float pll_angle_deg = pll_angle_normalized * 57.2958f;
 
-    float data[12] = {speed_rpm_temp, angle_deg, pll_angle_deg, id_temp, iq_temp, ia_temp, ib_temp, ic_temp,
-                      target_iq_temp, v_d_out_temp, v_q_out_temp, v_mag_temp};
-    printf_vofa(data, 14);
+    float data[16] = {speed_rpm_temp, angle_deg, pll_angle_deg, id_temp, iq_temp, ia_temp, ib_temp, ic_temp,
+                      target_iq_temp, v_d_pi_temp, v_q_pi_temp, v_d_ff_temp, v_q_ff_temp, v_d_out_temp, v_q_out_temp, v_mag_temp};
+    printf_vofa(data, 16);
 }

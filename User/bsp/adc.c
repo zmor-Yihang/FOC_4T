@@ -50,9 +50,19 @@ static void adc_value_convert(uint16_t *adc_buf, adc_values_t *out)
     float ib_hw = (vout_b - ADC_REF_VOLTAGE - adc_offset.ib_offset) * ADC_CURRENT_SCALE; // 硬件B相电流
     float ic_hw = -(ia_hw + ib_hw);                                                      // 硬件C相电流
 
-    out->ia = ia_hw;
-    out->ib = ib_hw;
-    out->ic = ic_hw;
+    float ia = ia_hw;
+    float ib = ib_hw;
+    float ic = ic_hw;
+
+#if (PHASE_SWAP == 0) // 不交换
+    out->ia = ia;
+    out->ib = ib;
+    out->ic = ic;
+#else  // 交换
+    out->ia = ib;
+    out->ib = ia;
+    out->ic = ic;
+#endif /* PHASE_SWAP_ENABLE */
 }
 
 /**
@@ -89,10 +99,6 @@ static void adc1_calibrate_offset(void)
 
 /**
  * @brief  ADC1 初始化
- * @note   调用前必须确保:
- *         - 电机驱动 EN 引脚关闭
- *         - PWM 未输出
- *         - 分流电阻上无电流
  */
 void adc_init(void)
 {

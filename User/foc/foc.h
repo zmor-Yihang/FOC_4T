@@ -31,6 +31,10 @@ typedef struct
 
     float v_d_out; /* D轴电压输出 */
     float v_q_out; /* Q轴电压输出 */
+    float v_d_pi;  /* D轴PI输出 */
+    float v_q_pi;  /* Q轴PI输出 */
+    float v_d_ff;  /* D轴前馈输出 */
+    float v_q_ff;  /* Q轴前馈输出 */
     float i_q_out; /* Q轴电流输出 (速度环) */
 
     pid_controller_t *pid_id; /* PID控制器 */

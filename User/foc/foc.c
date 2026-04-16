@@ -12,6 +12,10 @@ void foc_init(foc_t *handle, pid_controller_t *pid_id, pid_controller_t *pid_iq,
 
     handle->v_d_out = 0.0f;
     handle->v_q_out = 0.0f;
+    handle->v_d_pi = 0.0f;
+    handle->v_q_pi = 0.0f;
+    handle->v_d_ff = 0.0f;
+    handle->v_q_ff = 0.0f;
     handle->i_q_out = 0.0f;
 
     handle->pid_id = pid_id;
@@ -105,16 +109,26 @@ void foc_current_loop_run(foc_t *handle, dq_t i_dq, float angle_el)
     v_d_pi = pid_calculate(handle->pid_id, handle->target_id, i_dq.d);
     v_q_pi = pid_calculate(handle->pid_iq, handle->target_iq, i_dq.q);
 
+#if (FOC_DECOUPLING_ENABLE == 1)
     /* 前馈解耦（基于PMSM dq模型） */
     float speed_rpm = encoder_get_speed();
     float omega_e = speed_rpm * (ENCODER_TWO_PI / 60.0f) * MOTOR_POLE_PAIRS; // 电角速度 rad/s
 
     v_d_ff = -omega_e * MOTOR_LQ_H * i_dq.q;
     v_q_ff = omega_e * (MOTOR_LD_H * i_dq.d + MOTOR_PSI_F);
+#else
+    /* 关闭前馈解耦 */
+    v_d_ff = 0.0f;
+    v_q_ff = 0.0f;
+#endif /* FOC_DECOUPLING_ENABLE */
 
     v_d_unsat = v_d_pi + v_d_ff;
     v_q_unsat = v_q_pi + v_q_ff;
 
+    handle->v_d_pi = v_d_pi;
+    handle->v_q_pi = v_q_pi;
+    handle->v_d_ff = v_d_ff;
+    handle->v_q_ff = v_q_ff;
     handle->v_d_out = v_d_unsat;
     handle->v_q_out = v_q_unsat;
 

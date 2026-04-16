@@ -3,6 +3,7 @@
 
 // m1 PA5-PA7    TIM2_CH1 TIM3_CH1 TIM3_CH2
 #include "stm32g4xx_hal.h"
+#include "motor_config.h"
 
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
