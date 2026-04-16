@@ -13,4 +13,6 @@
 #define ENCODER_COUNT_SWAP 0    // 1：启用编码器计数翻转
 #define FOC_DECOUPLING_ENABLE 1 // 1:启用前馈解耦 0:关闭前馈解耦
 
+#define FOC_ELEC_ANGLE_TRIM_RAD 0.0f // 电角度手动微调量(rad)，正常情况下保持为0，仅在排查固定偏差时临时微调
+
 #endif /* __MOTOR_CONFIG_H__ */

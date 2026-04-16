@@ -81,7 +81,8 @@ void foc_alignment(foc_t *handle)
         HAL_Delay(FOC_ALIGN_SETTLE_TIME_MS);
     }
 
-    handle->angle_offset = angle_wrap_0_2pi(atan2f(sin_sum, cos_sum));
+    /* 灏嗗浐瀹氱數瑙掕ˉ鍋垮悎骞跺埌闆剁偣鍋忕Щ锛屽悗缁帶鍒惰璁＄畻鍙洿鎺ュ鐢?*/
+    handle->angle_offset = angle_wrap_0_2pi(atan2f(sin_sum, cos_sum) - FOC_ELEC_ANGLE_TRIM_RAD);
 
     HAL_Delay(1);     // 确保I2C通信完成
     encoder_update(); // 刷新PLL状态
