@@ -100,7 +100,7 @@ static uint16_t last_dma_pos = 0; /* 上次DMA位置，用于计算增量 */
 _fff_declare(uint8_t, fifo_uart_rx, FIFO_UART_RX_SIZE); // 声明FIFO接收缓冲区
 _fff_init(fifo_uart_rx);                                // 初始化FIFO
 
-void usart2_init(void)
+void usart_init(void)
 {
     GPIO_InitTypeDef gpio_init_struct = {0}; /* GPIO初始化结构体 */
 
@@ -183,7 +183,7 @@ void usart2_init(void)
 }
 
 /* 发送数据函数 */
-void usart2_send_data(uint8_t *data, uint16_t size)
+void usart_send_data(uint8_t *data, uint16_t size)
 {
     /* 等待上一次DMA发送完成，避免冲突 */
     while (huart2.gState != HAL_UART_STATE_READY)
@@ -192,7 +192,7 @@ void usart2_send_data(uint8_t *data, uint16_t size)
 }
 
 /* 从FIFO读取指定数量的数据 */
-uint16_t usart2_read_data(uint8_t *buf, uint16_t max_size)
+uint16_t usart_read_data(uint8_t *buf, uint16_t max_size)
 {
     uint16_t i;
     for (i = 0; i < max_size && !_fff_is_empty(fifo_uart_rx); i++)
@@ -203,13 +203,13 @@ uint16_t usart2_read_data(uint8_t *buf, uint16_t max_size)
 }
 
 /* 获取 fifo_uart_rx 中剩余空间 */
-uint16_t usart2_get_available_buffer(void)
+uint16_t usart_get_available_buffer(void)
 {
     return _fff_mem_free(fifo_uart_rx);
 }
 
 /* 检查fifo_uart_rx是否为空, 0表示非空，非0表示空 */
-uint8_t usart2_fifo_is_empty(void)
+uint8_t usart_fifo_is_empty(void)
 {
     return _fff_is_empty(fifo_uart_rx);
 }

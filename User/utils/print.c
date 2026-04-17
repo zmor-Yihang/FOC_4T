@@ -23,5 +23,5 @@ void printf_vofa(float *data, uint16_t num)
     memcpy(tx_buffer + data_len, justfloat_tail, 4);
 
     /* 一次性发送数据和帧尾，避免被其他串口发送打断 */
-    usart2_send_data(tx_buffer, data_len + 4);
+    usart_send_data(tx_buffer, data_len + 4);
 }

@@ -4,7 +4,7 @@ int main(void)
 {
     HAL_Init();
     clock_init();
-    usart2_init();
+    usart_init();
 
     gpio_init();
     encoder_init();
