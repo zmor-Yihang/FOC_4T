@@ -1,5 +1,5 @@
-#ifndef __MOTOR_CONFIG_H__
-#define __MOTOR_CONFIG_H__
+#ifndef __USER_CONFIG_H__
+#define __USER_CONFIG_H__
 
 #define U_DC 12.0 // 直流母线电压
 
@@ -20,4 +20,4 @@
 #define ENCODER_PLL_KI 1.58e6f              // 编码器速度 PLL 积分增益
 #define ENCODER_PLL_SPEED_LIMIT_RPM 3000.0f // 编码器 PLL 机械转速限幅(rpm)
 
-#endif /* __MOTOR_CONFIG_H__ */
+#endif /* __USER_CONFIG_H__ */

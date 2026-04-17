@@ -31,13 +31,13 @@ static void speed_closed_callback(void)
     encoder_update();
 
     // 控制使用PLL估计角度；编码器实测角度只用于调试观察
-    float angle_el = encoder_get_angle() - foc_speed_closed_handle.angle_offset;
+    float angle_el = encoder_get_pllAngle() - foc_speed_closed_handle.angle_offset;
     float angle_meas = encoder_get_encoderAngle() - foc_speed_closed_handle.angle_offset;
     float speed_feedback = encoder_get_speed();
 
     // 获取电流反馈值
     abc_t i_abc;
-    current_sense_get_injected_abc(&i_abc);
+    currentSense_get_injectedValue(&i_abc);
 
     // Clark 变换
     alphabeta_t i_alphabeta = clark_transform(i_abc);

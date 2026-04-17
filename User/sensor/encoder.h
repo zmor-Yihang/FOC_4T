@@ -2,8 +2,9 @@
 #define __ENCODER_H__
 
 #include "stm32g4xx_hal.h"
-#include "motor_config.h"
-#include "angle_utils.h"
+#include "../app/user_config.h"
+#include "../utils/angle_utils.h"
+#include "../bsp/as5600.h"
 
 // 编码器本体参数
 #define ENCODER_CPR 4096U
@@ -17,7 +18,7 @@ void encoder_init(void);
 void encoder_update(void);
 
 float encoder_get_encoderAngle(void);
-float encoder_get_angle(void);
+float encoder_get_pllAngle(void);
 float encoder_get_speed(void);
 
 #endif /* __ENCODER_H__ */

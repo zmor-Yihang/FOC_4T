@@ -2,7 +2,7 @@
 #define __AS5600_H__
 
 #include "stm32g4xx_hal.h"
-#include "i2c.h"
+#include "../bsp/i2c.h"
 
 // AS5600寄存器地址定义
 #define AS5600_I2C_ADDR (0x36 << 1) // AS5600的7位I2C地址是0x36，HAL中左移1位使用
@@ -37,6 +37,6 @@
 #define AS5600_BURN_SETTING 0x40 // 烧录MANG/CONF命令
 
 void as5600_init(void);
-uint8_t as5600_poll_raw_count(uint16_t *raw_count);
+uint8_t as5600_poll_rawCount(uint16_t *raw_count);
 
 #endif /* __AS5600_H__ */

@@ -25,15 +25,8 @@ targets:
         - Drivers/startup/inc_cmsis
         - Drivers/startup/inc_stm32g4
         - Drivers/startup/src_stm32g4
-        - User/app
-        - User/utils
-        - User/bsp
-        - User/foc
-        - User/motor
-        - User/test
         - User
         - Drivers/hal/src
-        - User/sensor
       libList: []
     excludeList: []
     settings:

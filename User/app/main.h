@@ -4,17 +4,18 @@
 #include "stm32g4xx_hal.h"
 #include <stdio.h>
 
-#include "clock.h"
-#include "usart.h"
-#include "gpio.h"
+#include "../alg/clark_park.h"
+#include "../bsp/adc.h"
+#include "../bsp/clock.h"
+#include "../bsp/gpio.h"
+#include "../bsp/usart.h"
 
-#include "tim.h"
-#include "encoder.h"
+#include "../bsp/tim.h"
+#include "../sensor/encoder.h"
 
-#include "current_closed.h"
-#include "speed_closed.h"
+#include "../motor/current_closed.h"
+#include "../motor/speed_closed.h"
 
-#include "adc_test.h"
 
 
 

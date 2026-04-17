@@ -29,12 +29,13 @@ static void current_closed_callback(void)
     encoder_update();
 
     // 控制使用PLL估计角度；原始角度只用于调试观察
-    float angle_el = angle_wrap_0_2pi(encoder_get_angle() - foc_current_closed_handle.angle_offset);
+    float angle_el = angle_wrap_0_2pi(encoder_get_pllAngle() - foc_current_closed_handle.angle_offset);
     float angle_raw = angle_wrap_0_2pi(encoder_get_encoderAngle() - foc_current_closed_handle.angle_offset);
 
     // 获取电流反馈值
     abc_t i_abc;
-    current_sense_get_injected_abc(&i_abc);
+    currentSense_get_injectedValue(&i_abc);
+    float speed_feedback = encoder_get_speed();
 
     // Clark 变换
     alphabeta_t i_alphabeta = clark_transform(i_abc);
@@ -44,12 +45,12 @@ static void current_closed_callback(void)
 
     // 打印用
     i_dq_temp = i_dq;
-    speed_temp = encoder_get_speed();
+    speed_temp = speed_feedback;
     angle_el_temp = angle_raw;
     pll_angle_el_temp = angle_el;
 
     // 电流闭环
-    foc_run_currentLoop(&foc_current_closed_handle, i_dq, angle_el);
+    foc_run_currentLoop(&foc_current_closed_handle, i_dq, angle_el, speed_feedback);
 
     // 打印用 Ud/Uq 及其 PI/前馈分量
     v_d_pi_temp = foc_current_closed_handle.v_d_pi;

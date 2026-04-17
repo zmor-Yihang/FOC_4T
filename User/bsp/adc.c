@@ -14,7 +14,7 @@ static uint16_t adc_injected_buf[2] = {0};
 static adc_offset_t adc_offset = {0};
 
 // 注入组中断回调函数指针
-static adc_injected_callback_p adc_injected_callback = NULL;
+static adc_injectedCallback_p adc_injected_callback = NULL;
 
 // 注入组转换完成中断触发计数器
 static volatile uint32_t adc_injected_irq_count = 0;
@@ -180,7 +180,7 @@ void adcDebug_get_offset(adc_offset_t *offsets)
 /**
  * @brief  获取最近一次注入组采样的原始值 (非阻塞)
  */
-void adc_get_injectedRaw(adc_raw_values_t *values)
+void adc_get_injectedRaw(adc_rawValues_t *values)
 {
     values->ia_raw = adc_injected_buf[0];
     values->ib_raw = adc_injected_buf[1];
@@ -189,7 +189,7 @@ void adc_get_injectedRaw(adc_raw_values_t *values)
 /**
  * @brief  规则组采样获取当前原始值 (阻塞式, 调试用)
  */
-void adcDebug_get_regularRaw(adc_raw_values_t *values)
+void adcDebug_get_regularRaw(adc_rawValues_t *values)
 {
     HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_regular_buf, 2); // 启动规则组DMA采样
     HAL_Delay(10);                                             // 等待10ms让ADC完成多次转换
@@ -212,7 +212,7 @@ uint32_t adcDebug_get_injectedCallbackCount(void)
 /**
  * @brief  注册注入组采样完成回调 (此回调中执行 FOC 计算)
  */
-void adc_register_injectedCallback(adc_injected_callback_p callback)
+void adc_register_injectedCallback(adc_injectedCallback_p callback)
 {
     adc_injected_callback = callback; // 保存用户回调函数指针
 }

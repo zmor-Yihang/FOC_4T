@@ -1,5 +1,4 @@
 #include "tim.h"
-#include "motor_config.h"
 
 TIM_HandleTypeDef htim2; // TIM2句柄
 TIM_HandleTypeDef htim3; // TIM3句柄

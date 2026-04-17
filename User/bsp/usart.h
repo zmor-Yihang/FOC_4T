@@ -1,9 +1,9 @@
 #ifndef __USART_H__
 #define __USART_H__
 
+#include <stdio.h>
 #include "stm32g4xx_hal.h"
-#include "stdio.h"
-#include "fifofast.h"
+#include "../utils/fifofast.h"
 
 extern UART_HandleTypeDef huart2;
 extern DMA_HandleTypeDef hdma_usart2_rx; /* 声明USART2接收DMA句柄 */

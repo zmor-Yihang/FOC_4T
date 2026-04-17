@@ -2,7 +2,7 @@
 
 I2C_HandleTypeDef hi2c3;
 
-static volatile I2C_ReadState_t i2c3_read_state = I2C_READ_STATE_DONE;
+static volatile i2c_readState_e i2c3_read_state = I2C_READ_STATE_DONE;
 
 void i2c_init(void)
 {
@@ -53,12 +53,12 @@ void i2c_read_bytesAsync(uint16_t dev_addr, uint16_t reg, uint8_t *recv_buffer, 
     i2c3_read_state = I2C_READ_STATE_BUSY;
 }
 
-I2C_ReadState_t i2c_get_readState(void)
+i2c_readState_e i2c_get_readState(void)
 {
     return i2c3_read_state;
 }
 
-void i2c_set_readState(I2C_ReadState_t current_state)
+void i2c_set_readState(i2c_readState_e current_state)
 {
     i2c3_read_state = current_state;
 }

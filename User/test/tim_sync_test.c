@@ -2,8 +2,8 @@
 
 #include <stdio.h>
 
-#include "print.h"
-#include "tim.h"
+#include "../utils/print.h"
+#include "../bsp/tim.h"
 
 #define TIM_SYNC_TEST_SUMMARY_PERIOD_MS (200U)
 #define TIM_SYNC_TEST_SUMMARY_SAMPLES (512U)

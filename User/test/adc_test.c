@@ -1,10 +1,6 @@
 #include "adc_test.h"
 
-#include <stdio.h>
 
-#include "adc.h"
-#include "sensor/current_sense.h"
-#include "print.h"
 
 void adc_test_init(void)
 {
@@ -17,8 +13,8 @@ void adc_test_poll(void)
     current_sense_offset_t current_offset;
     float debug_data[5];
 
-    current_sense_dbg_get_regular_abc(&phase_current);
-    current_sense_dbg_get_offset(&current_offset);
+    currentSenseDebug_get_regularValue(&phase_current);
+    currentSenseDebug_get_offset(&current_offset);
 
     debug_data[0] = phase_current.a;
     debug_data[1] = phase_current.b;

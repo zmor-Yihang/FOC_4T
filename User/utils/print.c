@@ -1,6 +1,5 @@
 #include "print.h"
-#include "usart.h"
-#include <string.h>
+
 
 /* JustFloat 协议帧尾: 0x00, 0x00, 0x80, 0x7f */
 static const uint8_t justfloat_tail[4] = {0x00, 0x00, 0x80, 0x7f};

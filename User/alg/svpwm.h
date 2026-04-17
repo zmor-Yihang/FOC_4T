@@ -1,9 +1,9 @@
 #ifndef __SVPWM_H__
 #define __SVPWM_H__
 
-#include "clark_park.h"
-#include "fast_sin_cos.h"
-#include "motor_config.h"
+#include "../alg/clark_park.h"
+#include "../utils/fast_sin_cos.h"
+#include "../app/user_config.h"
 
 /**
  * @brief  SVPWM调制函数

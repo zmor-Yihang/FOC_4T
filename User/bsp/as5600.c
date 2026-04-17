@@ -32,7 +32,7 @@ void as5600_init(void)
  * @brief 轮询获取最新原始角度计数
  * @retval 1: 获取到新数据; 0: 数据尚未准备好
  */
-uint8_t as5600_poll_raw_count(uint16_t *raw_count)
+uint8_t as5600_poll_rawCount(uint16_t *raw_count)
 {
     if (i2c_get_readState() == I2C_READ_STATE_BUSY)
     {
