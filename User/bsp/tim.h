@@ -12,12 +12,12 @@ extern TIM_HandleTypeDef htim3;
  * TIM1 PWM配置参数
  * TIM_CLK = 170 MHz / 定时器预分频因子
  * 系统时钟: 170MHz
- * PWM频率: 170MHz / (1+0) / 8500*2) = 10kHz（中心对齐模式下ARR计两次）
+ * PWM频率由 motor_config.h 中的 FOC_CURRENT_LOOP_FREQ_HZ 指定（中心对齐模式下ARR计两次）
  */
-#define TIM1_PRESCALER 0 /* 预分频值 */
-#define TIM1_PERIOD 8499 /* 自动重装载值（ARR） */
+#define TIM1_PRESCALER 0U /* 预分频值 */
+#define TIM1_PERIOD ((uint32_t)((170000000.0f / ((TIM1_PRESCALER) + 1.0f) / ((FOC_CURRENT_LOOP_FREQ_HZ) * 2.0f)) - 1.0f)) /* 自动重装载值（ARR） */
 
 void tim_init(void);
-void tim_set_pwm_duty(float duty1, float duty2, float duty3);
+void tim_set_pwmDuty(float duty1, float duty2, float duty3);
 
 #endif /* __TIM_H__ */

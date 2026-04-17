@@ -3,11 +3,6 @@
 
 #include "stm32g4xx_hal.h"
 
-#define ADC_REF_VOLTAGE 1.65f                                     // INA240 输出零点 (REF1=VS, REF2=GND → VS/2)
-#define ADC_SHUNT_RES 0.01f                                       // 分流电阻 (Ω)
-#define ADC_INA_GAIN 50.0f                                        // INA240A2 增益 (V/V)
-#define ADC_CURRENT_SCALE (1.0f / (ADC_INA_GAIN * ADC_SHUNT_RES)) // = 2.0 A/V
-
 #define ADC_VREF 3.3f          // ADC 参考电压
 #define ADC_RESOLUTION 4096.0f // 12位 ADC 分辨率
 
@@ -15,13 +10,14 @@
 #define ADC_CALIB_DELAY_MS 1   // 每次标定采样间隔 (ms)
 #define ADC_CALIB_SETTLE_MS 20 // 标定前等待模拟前端稳定 (ms)
 
-// 三相电流值
+#define ADC_INJECTED_CALLBACK_PRESCALER 2U // 注入组用户回调分频系数：1=不分频，2=2分频，3=3分频...
+
+// AB相原始采样值
 typedef struct
 {
-    float ia;
-    float ib;
-    float ic;
-} adc_values_t;
+    uint16_t ia_raw;
+    uint16_t ib_raw;
+} adc_raw_values_t;
 
 // AB相零点偏移
 typedef struct
@@ -33,15 +29,14 @@ typedef struct
 // 注入组中断回调函数指针类型
 typedef void (*adc_injected_callback_p)(void);
 
-// 
 void adc_init(void);
-void adc_get_regular_values(adc_values_t *values);
-void adc_get_injected_values(adc_values_t *values);
-void adc_register_injected_callback(adc_injected_callback_p callback);
+void adc_get_injectedRaw(adc_raw_values_t *values);
+void adc_register_injectedCallback(adc_injected_callback_p callback);
 
-// 调试接口
-void adc_get_offset(adc_offset_t *offsets);     // 获取ADC零点偏移
-uint32_t adc_get_injected_irq_count(void);      // 注入组中断触发计数器
-uint32_t adc_get_injected_callback_count(void); // 注入组用户ADC回调执行计数器, 触发中断不一定执行回调
+// 调试接口（统一使用 adc_dbg_ 前缀）
+void adcDebug_get_regularRaw(adc_raw_values_t *values); // 规则组阻塞式采样，仅调试用
+void adcDebug_get_offset(adc_offset_t *offsets);        // 获取ADC零点偏移
+uint32_t adcDebug_get_injectedIrqCount(void);           // 注入组中断触发计数器
+uint32_t adcDebug_get_injectedCallbackCount(void);      // 注入组用户ADC回调执行计数器，触发中断不一定执行回调
 
 #endif /* __ADC_H */

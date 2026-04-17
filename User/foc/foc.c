@@ -1,5 +1,7 @@
 #include "foc.h"
 
+#define FOC_CURRENT_LOOP_DT_S (1.0f / FOC_CURRENT_LOOP_FREQ_HZ)
+
 void foc_init(foc_t *handle, pid_controller_t *pid_id, pid_controller_t *pid_iq, pid_controller_t *pid_speed)
 {
     handle->target_speed = 0;
@@ -42,7 +44,7 @@ void foc_alignment(foc_t *handle)
     // 把电机拉到d轴
     alphabeta_t alpha_beta = ipark_transform(u_dq, 0.0f);
     abc_t duty_abc = svpwm_update(alpha_beta);
-    tim_set_pwm_duty(duty_abc.a, duty_abc.b, duty_abc.c);
+    tim_set_pwmDuty(duty_abc.a, duty_abc.b, duty_abc.c);
 
     HAL_Delay(FOC_ALIGN_SETTLE_TIME_MS);
 
@@ -60,13 +62,13 @@ void foc_alignment(foc_t *handle)
             alphabeta_t alpha_beta = ipark_transform(u_dq, angle_cmd);
             abc_t duty_abc = svpwm_update(alpha_beta);
 
-            tim_set_pwm_duty(duty_abc.a, duty_abc.b, duty_abc.c);
+            tim_set_pwmDuty(duty_abc.a, duty_abc.b, duty_abc.c);
 
             HAL_Delay(FOC_ALIGN_SAMPLE_INTERVAL_MS);
 
             encoder_update();
             HAL_Delay(1); // 
-            angle_meas = encoder_get_encoder_angle();
+            angle_meas = encoder_get_encoderAngle();
             offset_sample = angle_wrap_0_2pi(angle_meas - angle_cmd);
 
             fast_sin_cos(offset_sample, &sin_offset, &cos_offset);
@@ -77,7 +79,7 @@ void foc_alignment(foc_t *handle)
         /* 每圈结束后回到零角，减少下一圈起点跳变 */
         alphabeta_t alpha_beta = ipark_transform(u_dq, 0.0f);
         abc_t duty_abc = svpwm_update(alpha_beta);
-        tim_set_pwm_duty(duty_abc.a, duty_abc.b, duty_abc.c);
+        tim_set_pwmDuty(duty_abc.a, duty_abc.b, duty_abc.c);
         HAL_Delay(FOC_ALIGN_SETTLE_TIME_MS);
     }
 
@@ -88,7 +90,7 @@ void foc_alignment(foc_t *handle)
     encoder_update(); // 刷新PLL状态
 
     /* 关闭PWM输出 */
-    tim_set_pwm_duty(0.5f, 0.5f, 0.5f);
+    tim_set_pwmDuty(0.5f, 0.5f, 0.5f);
 }
 
 /**
@@ -97,7 +99,7 @@ void foc_alignment(foc_t *handle)
  * @param i_dq      dq 轴电流反馈
  * @param angle_el  电角度 (rad)
  */
-void foc_current_loop_run(foc_t *handle, dq_t i_dq, float angle_el)
+void foc_run_currentLoop(foc_t *handle, dq_t i_dq, float angle_el)
 {
     float v_d_pi;
     float v_q_pi;
@@ -107,8 +109,8 @@ void foc_current_loop_run(foc_t *handle, dq_t i_dq, float angle_el)
     float v_q_unsat;
 
     /* 电流环 PI */
-    v_d_pi = pid_calculate(handle->pid_id, handle->target_id, i_dq.d);
-    v_q_pi = pid_calculate(handle->pid_iq, handle->target_iq, i_dq.q);
+    v_d_pi = pid_calculate(handle->pid_id, handle->target_id, i_dq.d, FOC_CURRENT_LOOP_DT_S);
+    v_q_pi = pid_calculate(handle->pid_iq, handle->target_iq, i_dq.q, FOC_CURRENT_LOOP_DT_S);
 
 #if (FOC_DECOUPLING_ENABLE == 1)
     /* 前馈解耦（基于PMSM dq模型） */
@@ -154,7 +156,7 @@ void foc_current_loop_run(foc_t *handle, dq_t i_dq, float angle_el)
 
     /* SVPWM 输出 */
     handle->duty_cycle = svpwm_update(v_alphabeta);
-    tim_set_pwm_duty(handle->duty_cycle.a, handle->duty_cycle.b, handle->duty_cycle.c);
+    tim_set_pwmDuty(handle->duty_cycle.a, handle->duty_cycle.b, handle->duty_cycle.c);
 }
 
 /**
@@ -164,7 +166,7 @@ void foc_current_loop_run(foc_t *handle, dq_t i_dq, float angle_el)
  * @param angle_el  电角度 (rad)
  * @param speed_rpm 速度反馈 (RPM)
  */
-void foc_speed_loop_run(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_divider)
+void foc_run_speedLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_divider)
 {
     static uint8_t speed_loop_div = 0;
     uint8_t divider = (speed_loop_divider == 0U) ? 1U : speed_loop_divider;
@@ -172,28 +174,29 @@ void foc_speed_loop_run(foc_t *handle, dq_t i_dq, float angle_el, float speed_rp
     /* 速度环按分频执行，其他周期保持上一次 iq 目标 */
     if (++speed_loop_div >= divider)
     {
+        float speed_loop_dt = FOC_CURRENT_LOOP_DT_S * (float)divider;
         speed_loop_div = 0;
-        handle->target_iq = pid_calculate(handle->pid_speed, handle->target_speed, speed_rpm);
+        handle->target_iq = pid_calculate(handle->pid_speed, handle->target_speed, speed_rpm, speed_loop_dt);
     }
 
     /* Id 目标设为 0  */
     handle->target_id = 0.0f;
 
     /* 复用电流闭环 */
-    foc_current_loop_run(handle, i_dq, angle_el);
+    foc_run_currentLoop(handle, i_dq, angle_el);
 }
 
-void foc_set_target_id(foc_t *handle, float id)
+void foc_set_id(foc_t *handle, float id)
 {
     handle->target_id = id;
 }
 
-void foc_set_target_iq(foc_t *handle, float iq)
+void foc_set_iq(foc_t *handle, float iq)
 {
     handle->target_iq = iq;
 }
 
-void foc_set_target_speed(foc_t *handle, float speed_rpm)
+void foc_set_speed(foc_t *handle, float speed_rpm)
 {
     handle->target_speed = speed_rpm;
 }

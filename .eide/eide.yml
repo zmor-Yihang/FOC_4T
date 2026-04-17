@@ -25,7 +25,7 @@ targets:
         - Drivers/startup/inc_cmsis
         - Drivers/startup/inc_stm32g4
         - Drivers/startup/src_stm32g4
-        - User/application
+        - User/app
         - User/utils
         - User/bsp
         - User/foc
@@ -33,6 +33,7 @@ targets:
         - User/test
         - User
         - Drivers/hal/src
+        - User/sensor
       libList: []
     excludeList: []
     settings:

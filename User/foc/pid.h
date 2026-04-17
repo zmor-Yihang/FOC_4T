@@ -31,8 +31,8 @@ typedef struct
 /* PI控制器初始化 */
 void pid_init(pid_controller_t *pid, pid_type_t type, float kp, float ki, float out_min, float out_max);
 
-/* PI计算 */
-float pid_calculate(pid_controller_t *pid, float setpoint, float feedback);
+/* PI计算，dt单位：秒 */
+float pid_calculate(pid_controller_t *pid, float setpoint, float feedback, float dt);
 
 /* PI复位 */
 void pid_reset(pid_controller_t *pid);

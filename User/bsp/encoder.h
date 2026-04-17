@@ -38,25 +38,18 @@
 #define AS5600_BURN_ANGLE 0x80   // 烧录ZPOS/MPOS命令
 #define AS5600_BURN_SETTING 0x40 // 烧录MANG/CONF命令
 
-// 速度计算参数
-#define ENCODER_CPR 4096
+// 编码器本体参数
+#define ENCODER_CPR 4096U
 #define ENCODER_TWO_PI 6.28318530718f
 
-// 编码器速度采样周期，单位秒：表示 encoder_update() 两次调用之间的固定时间间隔
-#define ENCODER_SPEED_SAMPLE_TIME 0.0001f
-
-// 编码器速度PLL参数：阻尼比0.707, 带宽200Hz
-#define ENCODER_PLL_KP 1776.0f
-#define ENCODER_PLL_KI 1.58e6
-
-// PLL速度积分器限幅：机械转速上限(rpm)及对应电角速度上限(rad/s)
-#define ENCODER_PLL_SPEED_LIMIT_RPM 3000.0f
+// 编码器PLL派生参数
+#define ENCODER_SPEED_SAMPLE_TIME (1.0f / FOC_CURRENT_LOOP_FREQ_HZ) // encoder_update() 调用周期(s)
 #define ENCODER_PLL_SPEED_LIMIT_RAD_S ((ENCODER_PLL_SPEED_LIMIT_RPM / 60.0f) * ENCODER_TWO_PI * MOTOR_POLE_PAIRS)
 
 void encoder_init(void);
 void encoder_update(void);
 
-float encoder_get_encoder_angle(void);
+float encoder_get_encoderAngle(void);
 float encoder_get_angle(void);
 float encoder_get_speed(void);
 

@@ -38,7 +38,7 @@ static inline float encoder_count_to_elec_rad(float count)
  */
 static void encoder_get_current_elec_angle(void)
 {
-    switch (i2c_read_get_state())
+    switch (i2c_get_readState())
     {
     case I2C_READ_STATE_BUSY:
         // 预测角度
@@ -47,7 +47,7 @@ static void encoder_get_current_elec_angle(void)
     case I2C_READ_STATE_DONE:
         // 读取编码器角度
         current_elec_angle = encoder_count_to_elec_rad(encoder_build_raw_count(i2c_rx_buf));
-        i2c_read_bytes_async(AS5600_I2C_ADDR, AS5600_REG_RAW_ANGLE_H, i2c_rx_buf, 2);
+        i2c_read_bytesAsync(AS5600_I2C_ADDR, AS5600_REG_RAW_ANGLE_H, i2c_rx_buf, 2);
         break;
     }
     current_elec_angle = angle_wrap_0_2pi(current_elec_angle);
@@ -59,7 +59,7 @@ static void encoder_get_current_elec_angle(void)
 void encoder_init(void)
 {
     i2c_init();
-    i2c_read_bytes_async(AS5600_I2C_ADDR, AS5600_REG_RAW_ANGLE_H, i2c_rx_buf, 2);
+    i2c_read_bytesAsync(AS5600_I2C_ADDR, AS5600_REG_RAW_ANGLE_H, i2c_rx_buf, 2);
     HAL_Delay(1); // 确保I2C读写完成
 }
 
@@ -106,7 +106,7 @@ float encoder_get_angle(void)
 /**
  * @brief 获取编码器和预测的电角度[0, 2π)：rad
  */
-float encoder_get_encoder_angle(void)
+float encoder_get_encoderAngle(void)
 {
     return current_elec_angle;
 }

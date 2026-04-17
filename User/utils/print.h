@@ -4,9 +4,9 @@
 #include <stdio.h>
 #include "stm32g4xx_hal.h"
 
-void printf_vofa(float *data, uint16_t num);
+void vofa_send(float *data, uint16_t num);
 
-#define printf_period(period_ms, fmt, ...)                        \
+#define DBG_PRINTF_PERIOD(period_ms, fmt, ...)                    \
     do                                                            \
     {                                                             \
         static uint32_t _last_tick_##__LINE__ = 0;                \
@@ -16,5 +16,6 @@ void printf_vofa(float *data, uint16_t num);
             printf(fmt, ##__VA_ARGS__);                           \
         }                                                         \
     } while (0)
+
 
 #endif /* __PRINT_H__ */

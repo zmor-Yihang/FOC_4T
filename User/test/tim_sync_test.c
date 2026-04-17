@@ -29,7 +29,7 @@ static uint32_t tim_sync_calc_signed_diff(uint32_t cnt_master, uint32_t cnt_slav
 void tim_sync_test_init(void)
 {
     tim_init();
-    tim_set_pwm_duty(0.5f, 0.5f, 0.5f);
+    tim_set_pwmDuty(0.5f, 0.5f, 0.5f);
 }
 
 void tim_sync_test_poll(void)
@@ -52,7 +52,8 @@ void tim_sync_test_poll(void)
     debug_data[3] = (float)dir_tim2;
     debug_data[4] = (float)dir_tim3;
 
-    printf_vofa(debug_data, 5);
+    vofa_send(debug_data, 5);
+
 
     sample_count++;
 

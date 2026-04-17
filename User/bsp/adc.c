@@ -1,5 +1,4 @@
 #include "adc.h"
-#include "motor_config.h"
 
 // ADC1 句柄
 ADC_HandleTypeDef hadc1;
@@ -23,9 +22,6 @@ static volatile uint32_t adc_injected_irq_count = 0;
 // 注入组用户回调实际执行计数器
 static volatile uint32_t adc_injected_callback_count = 0;
 
-// 注入组回调分频标志位，用于隔一次中断执行一次用户回调，降低FOC计算频率
-static uint8_t adc_injected_callback_flag = 0;
-
 /**
  * @brief  将 ADC 原始值转换为原始电压 (V)
  */
@@ -35,44 +31,13 @@ static inline float adc_raw_to_voltage(uint16_t adc_raw)
 }
 
 /**
- * @brief  将 ADC 缓冲区数据转换为三相电流值
- * @param  adc_buf: ADC 原始数据数组 [ia_raw, ib_raw]
- * @param  out:     输出的三相电流结构体
- * @note   INA240 输出: Vout = Vref + Gain x Rshunt x I
- *         -> I = (Vout - Vref - offset) / (Gain x Rshunt)
- *         -> I = (Vout - Vref - offset) x ADC_CURRENT_SCALE
- */
-static void adc_value_convert(uint16_t *adc_buf, adc_values_t *out)
-{
-    float vout_a = adc_raw_to_voltage(adc_buf[0]);                                       // A相 INA240 输出电压
-    float vout_b = adc_raw_to_voltage(adc_buf[1]);                                       // B相 INA240 输出电压
-    float ia_hw = (vout_a - ADC_REF_VOLTAGE - adc_offset.ia_offset) * ADC_CURRENT_SCALE; // 硬件A相电流
-    float ib_hw = (vout_b - ADC_REF_VOLTAGE - adc_offset.ib_offset) * ADC_CURRENT_SCALE; // 硬件B相电流
-    float ic_hw = -(ia_hw + ib_hw);                                                      // 硬件C相电流
-
-    float ia = ia_hw;
-    float ib = ib_hw;
-    float ic = ic_hw;
-
-#if (PHASE_SWAP == 0) // 不交换
-    out->ia = ia;
-    out->ib = ib;
-    out->ic = ic;
-#else  // 交换
-    out->ia = ib;
-    out->ib = ia;
-    out->ic = ic;
-#endif /* PHASE_SWAP_ENABLE */
-}
-
-/**
  * @brief  零电流偏置标定
  *         在电机驱动未使能、无电流流过分流电阻时调用
  *         使用规则组 DMA 连续采样, 累加平均得到零点偏移
  * @note   标定结果 = 实际ADC电压 - 理论中点(1.65V) 的残余偏移
  *         后续电流计算时会减去该偏移
  */
-static void adc1_calibrate_offset(void)
+static void adc_calibrate_offset(void)
 {
     float sum_ia = 0.0f; // A相累加器
     float sum_ib = 0.0f; // B相累加器
@@ -85,8 +50,8 @@ static void adc1_calibrate_offset(void)
         float vout_a = adc_raw_to_voltage(adc_regular_buf[0]); // 读取A相电压
         float vout_b = adc_raw_to_voltage(adc_regular_buf[1]); // 读取B相电压
 
-        sum_ia += (vout_a - ADC_REF_VOLTAGE); // 累加A相对参考电压的偏差
-        sum_ib += (vout_b - ADC_REF_VOLTAGE); // 累加B相对参考电压的偏差
+        sum_ia += (vout_a - (ADC_VREF * 0.5f)); // 累加A相对理论中点电压的偏差
+        sum_ib += (vout_b - (ADC_VREF * 0.5f)); // 累加B相对理论中点电压的偏差
 
         HAL_Delay(ADC_CALIB_DELAY_MS); // 采样间隔
     }
@@ -196,54 +161,58 @@ void adc_init(void)
     HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
 
     // 零电流偏置标定, 消除INA240+PCB+参考电压残余偏移
-    adc1_calibrate_offset();
+    adc_calibrate_offset();
 
-    // 启动注入组中断采样, 等待TIM2_CC2触发, 进入FOC后由PWM驱动
+    // 启动注入组中断采样, 等待TIM2_Update触发, 进入FOC后由PWM驱动
     HAL_ADCEx_InjectedStart_IT(&hadc1);
 }
 
 /**
  * @brief  获取标定得到的零点偏移量
  */
-void adc_get_offset(adc_offset_t *offsets)
+void adcDebug_get_offset(adc_offset_t *offsets)
 {
     offsets->ia_offset = adc_offset.ia_offset; // 输出A相零点偏移
     offsets->ib_offset = adc_offset.ib_offset; // 输出B相零点偏移
 }
 
+
 /**
- * @brief  规则组采样获取当前电流值 (阻塞式, 调试用)
+ * @brief  获取最近一次注入组采样的原始值 (非阻塞)
  */
-void adc_get_regular_values(adc_values_t *values)
+void adc_get_injectedRaw(adc_raw_values_t *values)
+{
+    values->ia_raw = adc_injected_buf[0];
+    values->ib_raw = adc_injected_buf[1];
+}
+
+/**
+ * @brief  规则组采样获取当前原始值 (阻塞式, 调试用)
+ */
+void adcDebug_get_regularRaw(adc_raw_values_t *values)
 {
     HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_regular_buf, 2); // 启动规则组DMA采样
     HAL_Delay(10);                                             // 等待10ms让ADC完成多次转换
-    adc_value_convert(adc_regular_buf, values);                // 将ADC原始值转换为电流值
-    HAL_ADC_Stop_DMA(&hadc1);                                  // 停止DMA
+    values->ia_raw = adc_regular_buf[0];
+    values->ib_raw = adc_regular_buf[1];
+    HAL_ADC_Stop_DMA(&hadc1); // 停止DMA
 }
 
-/**
- * @brief  获取最近一次注入组采样的电流值 (非阻塞)
- */
-void adc_get_injected_values(adc_values_t *values)
-{
-    adc_value_convert(adc_injected_buf, values); // 使用注入组缓冲区的最新数据转换为电流值
-}
-
-uint32_t adc_get_injected_irq_count(void)
+uint32_t adcDebug_get_injectedIrqCount(void)
 {
     return adc_injected_irq_count;
 }
 
-uint32_t adc_get_injected_callback_count(void)
+uint32_t adcDebug_get_injectedCallbackCount(void)
 {
     return adc_injected_callback_count;
 }
 
+
 /**
  * @brief  注册注入组采样完成回调 (此回调中执行 FOC 计算)
  */
-void adc_register_injected_callback(adc_injected_callback_p callback)
+void adc_register_injectedCallback(adc_injected_callback_p callback)
 {
     adc_injected_callback = callback; // 保存用户回调函数指针
 }
@@ -269,9 +238,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)
         adc_injected_buf[0] = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_1); // 读取IA相注入通道值
         adc_injected_buf[1] = HAL_ADCEx_InjectedGetValue(hadc, ADC_INJECTED_RANK_2); // 读取IB相注入通道值
 
-        adc_injected_callback_flag ^= 1U; // 每次中断翻转标志位
-
-        if ((adc_injected_callback != NULL) && (adc_injected_callback_flag != 0U)) // 隔一次中断执行一次回调
+        if ((adc_injected_callback != NULL) && ((adc_injected_irq_count % ADC_INJECTED_CALLBACK_PRESCALER) == 0U)) // 按分频系数执行用户回调
         {
             adc_injected_callback_count++;
             adc_injected_callback(); // 执行用户FOC电流环回调函数

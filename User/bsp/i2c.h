@@ -11,10 +11,9 @@ typedef enum
 } I2C_ReadState_t;
 
 void i2c_init(void);
-void i2c_read_bytes_block(uint16_t dev_addr, uint16_t reg, uint8_t *recv_buffer, uint8_t len);
-void i2c_read_bytes_async(uint16_t dev_addr, uint16_t reg, uint8_t *recv_buffer, uint8_t len);
-I2C_ReadState_t i2c_read_get_state(void);
-void i2c_read_set_state(I2C_ReadState_t current_state);
-
+void i2c_read_bytesBlock(uint16_t dev_addr, uint16_t reg, uint8_t *recv_buffer, uint8_t len);
+void i2c_read_bytesAsync(uint16_t dev_addr, uint16_t reg, uint8_t *recv_buffer, uint8_t len);
+I2C_ReadState_t i2c_get_readState(void);
+void i2c_set_readState(I2C_ReadState_t current_state);
 
 #endif /* __I2C_H__ */

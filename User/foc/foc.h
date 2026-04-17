@@ -11,14 +11,17 @@
 #include "encoder.h"
 
 // 对齐过程相关参数
-#define FOC_ALIGN_D_AXIS_VOLTAGE      (0.5f)
-#define FOC_ALIGN_SETTLE_TIME_MS      (500U)
-#define FOC_ALIGN_SCAN_POINTS         (64)
-#define FOC_ALIGN_SCAN_REPEAT         (4U)
-#define FOC_ALIGN_SAMPLE_INTERVAL_MS  (10U)
+#define FOC_ALIGN_D_AXIS_VOLTAGE (0.5f)
+#define FOC_ALIGN_SETTLE_TIME_MS (500U)
+#define FOC_ALIGN_SCAN_POINTS (64)
+#define FOC_ALIGN_SCAN_REPEAT (4U)
+#define FOC_ALIGN_SAMPLE_INTERVAL_MS (10U)
 
 // SVPWM 电压矢量限幅比例, SVPWM 电压矢量限幅比例 (1/sqrt(3))
-#define FOC_VOLTAGE_LIMIT_SVPWM_SCALE (0.57735026919f) 
+#define FOC_VOLTAGE_LIMIT_SVPWM_SCALE (0.57735026919f)
+
+// 电流环执行周期
+#define FOC_CURRENT_LOOP_DT_S (1.0f / FOC_CURRENT_LOOP_FREQ_HZ)
 
 /* FOC 核心控制对象 */
 typedef struct
@@ -53,13 +56,12 @@ void foc_init(foc_t *handle, pid_controller_t *pid_id, pid_controller_t *pid_iq,
 void foc_alignment(foc_t *handle);
 
 /* 闭环控制 */
-void foc_current_loop_run(foc_t *handle, dq_t i_dq, float angle_el);
-void foc_speed_loop_run(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_divider);
+void foc_run_currentLoop(foc_t *handle, dq_t i_dq, float angle_el);
+void foc_run_speedLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_divider);
 
 /* 设置目标值 */
-void foc_set_target_id(foc_t *handle, float id);
-void foc_set_target_iq(foc_t *handle, float iq);
-void foc_set_target_speed(foc_t *handle, float speed_rpm);
-
+void foc_set_id(foc_t *handle, float id);
+void foc_set_iq(foc_t *handle, float iq);
+void foc_set_speed(foc_t *handle, float speed_rpm);
 
 #endif /* __FOC_H__ */

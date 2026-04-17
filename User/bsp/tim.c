@@ -79,7 +79,7 @@ void tim_init(void)
     TIM2->CR2 = (TIM2->CR2 & ~TIM_CR2_MMS) | TIM_TRGO_UPDATE;
 }
 
-void tim_set_pwm_duty(float duty1, float duty2, float duty3)
+void tim_set_pwmDuty(float duty1, float duty2, float duty3)
 {
     float duty_a = duty1;
     float duty_b = duty2;
@@ -89,7 +89,7 @@ void tim_set_pwm_duty(float duty1, float duty2, float duty3)
     uint32_t compare2 = (uint32_t)(duty_b * TIM1_PERIOD);
     uint32_t compare3 = (uint32_t)(duty_c * TIM1_PERIOD);
 
-#if (PHASE_SWAP == 0)
+#if (MOTOR_PHASE_SWAP == 0)
     __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, compare1); // 写入A相CCR（PA5/TIM2_CH1）
     __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, compare2); // 写入B相CCR（PA6/TIM3_CH1）
     __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, compare3); // 写入C相CCR（PA7/TIM3_CH2）

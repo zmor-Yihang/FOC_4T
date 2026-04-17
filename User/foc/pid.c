@@ -20,14 +20,17 @@ void pid_init(pid_controller_t *pid, pid_type_t type, float kp, float ki, float 
     pid->integral_max = fmaxf(fabsf(out_min), fabsf(out_max));
 }
 
-float pid_calculate(pid_controller_t *pid, float setpoint, float feedback)
+float pid_calculate(pid_controller_t *pid, float setpoint, float feedback, float dt)
 {
     pid->error = setpoint - feedback; // 误差
 
     float p_term = pid->kp * pid->error; // 比例项
 
+    if (dt < 0.0f)
+        dt = 0.0f;
+
     // back-calc 自动调节
-    float integral_increment = pid->kp * pid->ki * pid->error - pid->kt * pid->backcalc_error; // 该周期的积分项 + back-calc 修正
+    float integral_increment = (pid->kp * pid->ki * pid->error - pid->kt * pid->backcalc_error) * dt; // 该周期的积分项 + back-calc 修正
 
     pid->integral += integral_increment; // 积分项累加
 

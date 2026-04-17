@@ -19,7 +19,7 @@ void usart_init(void);
 void usart_send_data(uint8_t *data, uint16_t size);
 uint16_t usart_read_data(uint8_t *buf, uint16_t max_size);
 
-uint16_t usart_get_available_buffer(void);
-uint8_t usart_fifo_is_empty(void);
+uint16_t usart_get_availableBuffer(void);
+uint8_t usart_is_rxFifoEmpty(void);
 
 #endif /* __USART_H__ */

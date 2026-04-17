@@ -203,13 +203,13 @@ uint16_t usart_read_data(uint8_t *buf, uint16_t max_size)
 }
 
 /* 获取 fifo_uart_rx 中剩余空间 */
-uint16_t usart_get_available_buffer(void)
+uint16_t usart_get_availableBuffer(void)
 {
     return _fff_mem_free(fifo_uart_rx);
 }
 
-/* 检查fifo_uart_rx是否为空, 0表示非空，非0表示空 */
-uint8_t usart_fifo_is_empty(void)
+/* 检查接收FIFO是否为空, 0表示非空，非0表示空 */
+uint8_t usart_is_rxFifoEmpty(void)
 {
     return _fff_is_empty(fifo_uart_rx);
 }
