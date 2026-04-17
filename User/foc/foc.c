@@ -169,12 +169,11 @@ void foc_run_currentLoop(foc_t *handle, dq_t i_dq, float angle_el)
 void foc_run_speedLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_divider)
 {
     static uint8_t speed_loop_div = 0;
-    uint8_t divider = (speed_loop_divider == 0U) ? 1U : speed_loop_divider;
 
     /* 速度环按分频执行，其他周期保持上一次 iq 目标 */
-    if (++speed_loop_div >= divider)
+    if (++speed_loop_div >= speed_loop_divider)
     {
-        float speed_loop_dt = FOC_CURRENT_LOOP_DT_S * (float)divider;
+        float speed_loop_dt = FOC_CURRENT_LOOP_DT_S * (float)speed_loop_divider;
         speed_loop_div = 0;
         handle->target_iq = pid_calculate(handle->pid_speed, handle->target_speed, speed_rpm, speed_loop_dt);
     }

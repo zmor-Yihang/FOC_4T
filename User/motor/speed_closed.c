@@ -71,10 +71,10 @@ static void speed_closed_callback(void)
 void speedClosed_init(float speed_rpm)
 {
     // 初始化速度环 PID 控制器
-    pid_init(&pid_id, PID_TYPE_CURRENT, 5.02f, 0.267f, -U_DC / 2.0f, U_DC / 2.0f);
-    pid_init(&pid_iq, PID_TYPE_CURRENT, 5.02f, 0.267f, -U_DC / 2.0f, U_DC / 2.0f); // 按电流环带宽1000Hz整定
+    pid_init(&pid_id, PID_TYPE_CURRENT, 5.02f, 2670.0f, -U_DC / 2.0f, U_DC / 2.0f);
+    pid_init(&pid_iq, PID_TYPE_CURRENT, 5.02f, 2670.0f, -U_DC / 2.0f, U_DC / 2.0f); // 按电流环带宽1000Hz整定
 
-    pid_init(&pid_speed, PID_TYPE_SPEED, 0.004f, 0.0025f, -1.0f, 1.0f); // 按 δ = 16 整定的
+    pid_init(&pid_speed, PID_TYPE_SPEED, 0.004f, 2.5f, -1.0f, 1.0f); // 按 δ = 16 整定的
 
     // 初始化 FOC 控制句柄
     foc_init(&foc_speed_closed_handle, &pid_id, &pid_iq, &pid_speed);
