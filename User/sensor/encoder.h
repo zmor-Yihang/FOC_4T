@@ -19,6 +19,6 @@ void encoder_update(void);
 
 float encoder_get_encoderAngle(void);
 float encoder_get_pllAngle(void);
-float encoder_get_speed(void);
+float encoder_get_pllSpeed(void);
 
 #endif /* __ENCODER_H__ */

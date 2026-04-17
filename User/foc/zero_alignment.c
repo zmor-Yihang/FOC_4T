@@ -1,10 +1,10 @@
 #include <math.h>
 
 #include "foc.h"
-#include "foc_gate_drive.h"
+#include "gate_drive.h"
 #include "../sensor/encoder.h"
 
-void foc_alignment(foc_t *handle)
+void zero_alignment(foc_t *handle)
 {
     float sin_sum = 0.0f;
     float cos_sum = 0.0f;
@@ -13,7 +13,7 @@ void foc_alignment(foc_t *handle)
     dq_t u_dq = {.d = FOC_ALIGN_D_AXIS_VOLTAGE, .q = 0.0f};
 
     /* 把电机拉到 d 轴 */
-    handle->duty_cycle = focGateDrive_set_voltage(ipark_transform(u_dq, 0.0f));
+    handle->duty_cycle = gateDrive_set_voltage(ipark_transform(u_dq, 0.0f));
     HAL_Delay(FOC_ALIGN_SETTLE_TIME_MS);
 
     /* 缓慢扫描一整圈电角度，累计每个采样点的偏移圆均值 */
@@ -27,7 +27,7 @@ void foc_alignment(foc_t *handle)
             float sin_offset;
             float cos_offset;
 
-            handle->duty_cycle = focGateDrive_set_voltage(ipark_transform(u_dq, angle_cmd));
+            handle->duty_cycle = gateDrive_set_voltage(ipark_transform(u_dq, angle_cmd));
             HAL_Delay(FOC_ALIGN_SAMPLE_INTERVAL_MS);
 
             encoder_update();
@@ -41,7 +41,7 @@ void foc_alignment(foc_t *handle)
         }
 
         /* 每圈结束后回到零角，减少下一圈起点跳变 */
-        handle->duty_cycle = focGateDrive_set_voltage(ipark_transform(u_dq, 0.0f));
+        handle->duty_cycle = gateDrive_set_voltage(ipark_transform(u_dq, 0.0f));
         HAL_Delay(FOC_ALIGN_SETTLE_TIME_MS);
     }
 
@@ -51,5 +51,5 @@ void foc_alignment(foc_t *handle)
     encoder_update(); /* 刷新PLL状态 */
 
     /* 关闭PWM输出 */
-    handle->duty_cycle = focGateDrive_stop();
+    handle->duty_cycle = gateDrive_stop();
 }

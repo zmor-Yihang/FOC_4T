@@ -33,7 +33,7 @@ static void speed_closed_callback(void)
     // 控制使用PLL估计角度；编码器实测角度只用于调试观察
     float angle_el = encoder_get_pllAngle() - foc_speed_closed_handle.angle_offset;
     float angle_meas = encoder_get_encoderAngle() - foc_speed_closed_handle.angle_offset;
-    float speed_feedback = encoder_get_speed();
+    float speed_feedback = encoder_get_pllSpeed();
 
     // 获取电流反馈值
     abc_t i_abc;
@@ -56,7 +56,7 @@ static void speed_closed_callback(void)
     pll_angle_el_temp = angle_el;
 
     // 速度闭环
-    foc_run_speedLoop(&foc_speed_closed_handle, i_dq, angle_el, speed_feedback, FOC_SPEED_LOOP_DIVIDER);
+    loopControl_run_speedLoop(&foc_speed_closed_handle, i_dq, angle_el, speed_feedback, FOC_SPEED_LOOP_DIVIDER);
 
     target_iq_temp = foc_speed_closed_handle.target_iq;
     v_d_pi_temp = foc_speed_closed_handle.v_d_pi;
@@ -84,7 +84,7 @@ void speedClosed_init(float speed_rpm)
     foc_set_speed(&foc_speed_closed_handle, speed_rpm);
 
     // 零点对齐
-    foc_alignment(&foc_speed_closed_handle);
+    zero_alignment(&foc_speed_closed_handle);
 
     // 注册回调函数
     adc_register_injectedCallback(speed_closed_callback);

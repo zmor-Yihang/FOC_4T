@@ -4,7 +4,7 @@
 
 - `i2c.c`：异步读取 AS5600 原始角度寄存器
 - `encoder.c`：将角度换算为电角度，并用 `PLL` 估计相位与速度
-- `speed_closed.c`：读取 `encoder_get_speed()` 作为速度反馈，并在 `VOFA` 中观察波形
+- `speed_closed.c`：读取 `encoder_get_pllSpeed()` 作为速度反馈，并在 `VOFA` 中观察波形
 
 调试中发现如下异常：
 

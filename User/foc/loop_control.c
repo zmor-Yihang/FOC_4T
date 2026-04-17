@@ -1,16 +1,16 @@
 #include <math.h>
 
 #include "foc.h"
-#include "foc_gate_drive.h"
+#include "gate_drive.h"
 
 /**
  * @brief 电流闭环运行
  * @param handle    FOC 控制句柄
  * @param i_dq      dq 轴电流反馈
  * @param angle_el  电角度 (rad)
- * @param speed_rpm 机械速度反馈 (RPM)
+ * @param speed_rpm 机械速度反馈 (RPM), 仅在启用前馈解耦时使用
  */
-void foc_run_currentLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm)
+void loopControl_run_currentLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm)
 {
     float v_d_pi;
     float v_q_pi;
@@ -24,7 +24,7 @@ void foc_run_currentLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_r
     v_q_pi = pid_calculate(handle->pid_iq, handle->target_iq, i_dq.q, FOC_CURRENT_LOOP_DT_S);
 
 #if (FOC_DECOUPLING_ENABLE == 1)
-    /* 前馈解耦（基于PMSM dq模型） */
+    /* 前馈解耦 */
     float omega_e = speed_rpm * (6.28318530718f / 60.0f) * MOTOR_POLE_PAIRS; /* 电角速度 rad/s */
 
     v_d_ff = -omega_e * MOTOR_LQ_H * i_dq.q;
@@ -63,7 +63,7 @@ void foc_run_currentLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_r
 
     /* 逆 Park 变换后交由输出层完成调制与PWM下发 */
     alphabeta_t v_alphabeta = ipark_transform((dq_t){.d = handle->v_d_out, .q = handle->v_q_out}, angle_el);
-    handle->duty_cycle = focGateDrive_set_voltage(v_alphabeta);
+    handle->duty_cycle = gateDrive_set_voltage(v_alphabeta);
 }
 
 /**
@@ -73,7 +73,7 @@ void foc_run_currentLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_r
  * @param angle_el  电角度 (rad)
  * @param speed_rpm 速度反馈 (RPM)
  */
-void foc_run_speedLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_divider)
+void loopControl_run_speedLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_divider)
 {
     static uint8_t speed_loop_div = 0;
 
@@ -89,5 +89,5 @@ void foc_run_speedLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm
     handle->target_id = 0.0f;
 
     /* 复用电流闭环 */
-    foc_run_currentLoop(handle, i_dq, angle_el, speed_rpm);
+    loopControl_run_currentLoop(handle, i_dq, angle_el, speed_rpm);
 }

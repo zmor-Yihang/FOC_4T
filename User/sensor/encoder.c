@@ -99,7 +99,7 @@ float encoder_get_encoderAngle(void)
 /**
  * @brief 获取PLL估计的转速: rpm
  */
-float encoder_get_speed(void)
+float encoder_get_pllSpeed(void)
 {
     return (pll_speed_rad_s / (ENCODER_TWO_PI * MOTOR_POLE_PAIRS)) * 60.0f;
 }

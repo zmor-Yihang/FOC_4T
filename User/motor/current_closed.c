@@ -35,7 +35,7 @@ static void current_closed_callback(void)
     // 获取电流反馈值
     abc_t i_abc;
     currentSense_get_injectedValue(&i_abc);
-    float speed_feedback = encoder_get_speed();
+    float speed_feedback = encoder_get_pllSpeed();
 
     // Clark 变换
     alphabeta_t i_alphabeta = clark_transform(i_abc);
@@ -50,7 +50,7 @@ static void current_closed_callback(void)
     pll_angle_el_temp = angle_el;
 
     // 电流闭环
-    foc_run_currentLoop(&foc_current_closed_handle, i_dq, angle_el, speed_feedback);
+    loopControl_run_currentLoop(&foc_current_closed_handle, i_dq, angle_el, speed_feedback);
 
     // 打印用 Ud/Uq 及其 PI/前馈分量
     v_d_pi_temp = foc_current_closed_handle.v_d_pi;
@@ -75,7 +75,7 @@ void currentClosed_init(float id, float iq)
     foc_set_iq(&foc_current_closed_handle, iq);
 
     // 零点对齐
-    foc_alignment(&foc_current_closed_handle);
+    zero_alignment(&foc_current_closed_handle);
 
     // 注册回调函数
     adc_register_injectedCallback(current_closed_callback);
