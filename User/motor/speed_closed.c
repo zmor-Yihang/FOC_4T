@@ -93,19 +93,19 @@ void speedClosed_init(float speed_rpm)
 void speedClosedDebug_print_info(void)
 {
     // 归一化角度到 [0, 2π) 范围
-    float angle_normalized = fmodf(angle_el_temp, 2.0f * M_PI);
+    float angle_normalized = fmodf(angle_el_temp, MATH_TWO_PI);
     if (angle_normalized < 0.0f)
     {
-        angle_normalized += 2.0f * M_PI;
+        angle_normalized += MATH_TWO_PI;
     }
     // 转换为角度 (0-360°)
     float angle_deg = angle_normalized * 57.2958f;
 
     // PLL估计电角度也归一化并转换到角度制
-    float pll_angle_normalized = fmodf(pll_angle_el_temp, 2.0f * M_PI);
+    float pll_angle_normalized = fmodf(pll_angle_el_temp, MATH_TWO_PI);
     if (pll_angle_normalized < 0.0f)
     {
-        pll_angle_normalized += 2.0f * M_PI;
+        pll_angle_normalized += MATH_TWO_PI;
     }
     float pll_angle_deg = pll_angle_normalized * 57.2958f;
 

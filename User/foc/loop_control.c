@@ -25,7 +25,7 @@ void loopControl_run_currentLoop(foc_t *handle, dq_t i_dq, float angle_el, float
 
 #if (FOC_DECOUPLING_ENABLE == 1)
     /* 前馈解耦 */
-    float omega_e = speed_rpm * (6.28318530718f / 60.0f) * MOTOR_POLE_PAIRS; /* 电角速度 rad/s */
+    float omega_e = speed_rpm * (MATH_TWO_PI / 60.0f) * MOTOR_POLE_PAIRS; /* 电角速度 rad/s */
 
     v_d_ff = -omega_e * MOTOR_LQ_H * i_dq.q;
     v_q_ff = omega_e * (MOTOR_LD_H * i_dq.d + MOTOR_PSI_F);

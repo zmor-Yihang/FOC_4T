@@ -16,7 +16,7 @@ static inline float encoder_covert_countToElectricalAngle(float count)
     uint16_t mech_count = ENCODER_CPR - count;
 #endif /* ENCODER_COUNT_SWAP */
 
-    float mech_rad = mech_count * (ENCODER_TWO_PI / (float)ENCODER_CPR);
+    float mech_rad = mech_count * (MATH_TWO_PI / (float)ENCODER_CPR);
     return mech_rad * MOTOR_POLE_PAIRS;
 }
 
@@ -101,5 +101,5 @@ float encoder_get_encoderAngle(void)
  */
 float encoder_get_pllSpeed(void)
 {
-    return (pll_speed_rad_s / (ENCODER_TWO_PI * MOTOR_POLE_PAIRS)) * 60.0f;
+    return (pll_speed_rad_s / (MATH_TWO_PI * MOTOR_POLE_PAIRS)) * 60.0f;
 }

@@ -3,6 +3,9 @@
 
 #define U_DC 12.0 // 直流母线电压
 
+#define MATH_PI 3.14159265358979323846f // 圆周率 PI
+#define MATH_TWO_PI (2.0f * MATH_PI)    // 2*PI
+
 #define MOTOR_POLE_PAIRS 7  // 电机极对数
 #define MOTOR_RS_Ω 2.3f     // 定子电阻，实测1欧
 #define MOTOR_LD_H 0.86e-3f // d轴电感(H)

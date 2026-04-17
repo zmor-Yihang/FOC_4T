@@ -21,7 +21,7 @@ void zero_alignment(foc_t *handle)
     {
         for (sample_idx = 0U; sample_idx < FOC_ALIGN_SCAN_POINTS; sample_idx++)
         {
-            float angle_cmd = (ENCODER_TWO_PI * (float)sample_idx) / (float)FOC_ALIGN_SCAN_POINTS;
+            float angle_cmd = (MATH_TWO_PI * (float)sample_idx) / (float)FOC_ALIGN_SCAN_POINTS;
             float angle_meas;
             float offset_sample;
             float sin_offset;
