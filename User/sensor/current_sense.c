@@ -48,4 +48,3 @@ void current_sense_dbg_get_offset(current_sense_offset_t *offsets)
 {
     adcDebug_get_offset(offsets);
 }
-

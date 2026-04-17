@@ -1,9 +1,7 @@
-#ifndef __ENCODER_H__
-#define __ENCODER_H__
+#ifndef __AS5600_H__
+#define __AS5600_H__
 
 #include "stm32g4xx_hal.h"
-#include "motor_config.h"
-#include "angle_utils.h"
 #include "i2c.h"
 
 // AS5600寄存器地址定义
@@ -38,19 +36,7 @@
 #define AS5600_BURN_ANGLE 0x80   // 烧录ZPOS/MPOS命令
 #define AS5600_BURN_SETTING 0x40 // 烧录MANG/CONF命令
 
-// 编码器本体参数
-#define ENCODER_CPR 4096U
-#define ENCODER_TWO_PI 6.28318530718f
+void as5600_init(void);
+uint8_t as5600_poll_raw_count(uint16_t *raw_count);
 
-// 编码器PLL派生参数
-#define ENCODER_SPEED_SAMPLE_TIME (1.0f / FOC_CURRENT_LOOP_FREQ_HZ) // encoder_update() 调用周期(s)
-#define ENCODER_PLL_SPEED_LIMIT_RAD_S ((ENCODER_PLL_SPEED_LIMIT_RPM / 60.0f) * ENCODER_TWO_PI * MOTOR_POLE_PAIRS)
-
-void encoder_init(void);
-void encoder_update(void);
-
-float encoder_get_encoderAngle(void);
-float encoder_get_angle(void);
-float encoder_get_speed(void);
-
-#endif /* encoder.h */
+#endif /* __AS5600_H__ */

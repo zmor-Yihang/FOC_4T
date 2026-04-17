@@ -1,21 +1,10 @@
 #include "encoder.h"
-#include "angle_utils.h"
+#include "as5600.h"
 
 // 编码器速度计算相关静态数据
 static float current_elec_angle = 0.0f; // 当前电角度，由编码器获得（结合预测）
 static float pll_phase_rad = 0.0f;      /* PLL相位估计值(单位:电角度rad) */
 static float pll_speed_rad_s = 0.0f;    /* PLL速度估计值(单位:电角速度rad/s) */
-
-// 编码器异步读取接收缓冲区
-static uint8_t i2c_rx_buf[2] = {0};
-
-/**
- * @brief 拼接I2C接收缓冲区得到原始计数 0-4965
- */
-static inline uint16_t encoder_build_raw_count(const uint8_t *recv_buffer)
-{
-    return ((((uint16_t)recv_buffer[0]) << 8) | recv_buffer[1]) & 0x0FFF;
-}
 
 /**
  * @brief 将机械角度计数值换算为电角度弧度值 0-2π
@@ -38,29 +27,26 @@ static inline float encoder_count_to_elec_rad(float count)
  */
 static void encoder_get_current_elec_angle(void)
 {
-    switch (i2c_get_readState())
+    uint16_t raw_count = 0U;
+
+    if (as5600_poll_raw_count(&raw_count) != 0U)
     {
-    case I2C_READ_STATE_BUSY:
-        // 预测角度
-        current_elec_angle = pll_phase_rad + pll_speed_rad_s * ENCODER_SPEED_SAMPLE_TIME;
-        break;
-    case I2C_READ_STATE_DONE:
-        // 读取编码器角度
-        current_elec_angle = encoder_count_to_elec_rad(encoder_build_raw_count(i2c_rx_buf));
-        i2c_read_bytesAsync(AS5600_I2C_ADDR, AS5600_REG_RAW_ANGLE_H, i2c_rx_buf, 2);
-        break;
+        current_elec_angle = encoder_count_to_elec_rad(raw_count);
     }
+    else
+    {
+        current_elec_angle = pll_phase_rad + pll_speed_rad_s * ENCODER_SPEED_SAMPLE_TIME;
+    }
+
     current_elec_angle = angle_wrap_0_2pi(current_elec_angle);
 }
 
 /**
- * * @brief 初始化编码器
+ * @brief 初始化编码器
  */
 void encoder_init(void)
 {
-    i2c_init();
-    i2c_read_bytesAsync(AS5600_I2C_ADDR, AS5600_REG_RAW_ANGLE_H, i2c_rx_buf, 2);
-    HAL_Delay(1); // 确保I2C读写完成
+    as5600_init();
 }
 
 /**
