@@ -7,7 +7,7 @@
  * @return 包络后的最短路径角度误差
  * @note  主要用于误差计算，避免跨零点时角度突变
  */
-float angle_wrap_pm_pi(float angle_rad);
+float wrap_pm_pi(float angle_rad);
 
 /**
  * @brief 将角度包络到[0, 2π)范围
@@ -15,6 +15,6 @@ float angle_wrap_pm_pi(float angle_rad);
  * @return 归一化后的角度
  * @note  用于保证角度状态始终落在单圈范围内
  */
-float angle_wrap_0_2pi(float angle_rad);
+float wrap_0_2pi(float angle_rad);
 
 #endif /* __ANGLE_UTILS_H__ */

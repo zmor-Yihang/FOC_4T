@@ -33,7 +33,7 @@ void zero_alignment(foc_t *handle)
             encoder_update();
             HAL_Delay(1); /* 确保角度读取完成 */
             angle_meas = encoder_get_encoderAngle();
-            offset_sample = angle_wrap_0_2pi(angle_meas - angle_cmd);
+            offset_sample = wrap_0_2pi(angle_meas - angle_cmd);
 
             fast_sin_cos(offset_sample, &sin_offset, &cos_offset);
             sin_sum += sin_offset;
@@ -45,7 +45,7 @@ void zero_alignment(foc_t *handle)
         HAL_Delay(FOC_ALIGN_SETTLE_TIME_MS);
     }
 
-    handle->angle_offset = angle_wrap_0_2pi(atan2f(sin_sum, cos_sum) - FOC_ELEC_ANGLE_TRIM_RAD);
+    handle->angle_offset = wrap_0_2pi(atan2f(sin_sum, cos_sum) - FOC_ELEC_ANGLE_TRIM_RAD);
 
     HAL_Delay(1);     /* 确保I2C通信完成 */
     encoder_update(); /* 刷新PLL状态 */

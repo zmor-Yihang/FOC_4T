@@ -4,13 +4,11 @@ alphabeta_t clark_transform(abc_t abc)
 {
     alphabeta_t alpha_beta;
 
-    float one_by_sqrt3 = 1.0f / sqrtf(3.0f);
-
     // iα = Ia
     alpha_beta.alpha = abc.a;
 
     // iβ = (1/√3)Ia + (2/√3)Ib
-    alpha_beta.beta = one_by_sqrt3 * abc.a + 2.0f * one_by_sqrt3 * abc.b;
+    alpha_beta.beta = MATH_INV_SQRT3 * abc.a + 2.0f * MATH_INV_SQRT3 * abc.b;
 
     return alpha_beta;
 }
@@ -19,13 +17,11 @@ abc_t iclark_transform(alphabeta_t alpha_beta)
 {
     abc_t abc;
 
-    float sqrt3_by_2 = sqrtf(3.0f) / 2.0f;
-
     // Ia = iα
     abc.a = alpha_beta.alpha;
 
     // Ib = -iα/2 + (√3/2)iβ
-    abc.b = -0.5f * alpha_beta.alpha + sqrt3_by_2 * alpha_beta.beta;
+    abc.b = -0.5f * alpha_beta.alpha + MATH_SQRT3_BY_2 * alpha_beta.beta;
 
     // Ic = -Ia - Ib
     abc.c = -abc.a - abc.b;
