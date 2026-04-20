@@ -6,6 +6,8 @@ void foc_init(foc_t *handle, pid_controller_t *pid_id, pid_controller_t *pid_iq,
     handle->target_id = 0.0f;
     handle->target_iq = 0.0f;
 
+    handle->v_d_cmd = 0.0f;
+    handle->v_q_cmd = 0.0f;
     handle->v_d_out = 0.0f;
     handle->v_q_out = 0.0f;
     handle->v_d_pi = 0.0f;
@@ -16,6 +18,7 @@ void foc_init(foc_t *handle, pid_controller_t *pid_id, pid_controller_t *pid_iq,
     handle->pid_id = pid_id;
     handle->pid_iq = pid_iq;
     handle->pid_speed = pid_speed;
+    handle->flux_weak = NULL;
 
     handle->duty_cycle.a = 0.0f;
     handle->duty_cycle.b = 0.0f;
@@ -37,5 +40,10 @@ void foc_set_iq(foc_t *handle, float iq)
 void foc_set_speed(foc_t *handle, float speed_rpm)
 {
     handle->target_speed = speed_rpm;
+}
+
+void foc_set_fluxWeak(foc_t *handle, flux_weak_t *flux_weak)
+{
+    handle->flux_weak = flux_weak;
 }
 

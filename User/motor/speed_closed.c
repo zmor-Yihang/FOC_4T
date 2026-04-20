@@ -1,6 +1,8 @@
 #include "speed_closed.h"
+#include "../adv_alg/weaken_flux.h"
 
 static foc_t foc_speed_closed_handle;
+static flux_weak_t flux_weak_handle;
 
 static pid_controller_t pid_id;
 static pid_controller_t pid_iq;
@@ -17,6 +19,7 @@ static float ia_temp = 0.0f;
 static float ib_temp = 0.0f;
 static float ic_temp = 0.0f;
 static float target_iq_temp = 0.0f;
+static float target_id_temp = 0.0f;
 static float v_d_pi_temp = 0.0f;
 static float v_q_pi_temp = 0.0f;
 static float v_d_ff_temp = 0.0f;
@@ -59,6 +62,7 @@ static void speed_closed_callback(void)
     loopControl_run_speedLoop(&foc_speed_closed_handle, i_dq, angle_el, speed_feedback, FOC_SPEED_LOOP_DIVIDER);
 
     target_iq_temp = foc_speed_closed_handle.target_iq;
+    target_id_temp = foc_speed_closed_handle.target_id;
     v_d_pi_temp = foc_speed_closed_handle.v_d_pi;
     v_q_pi_temp = foc_speed_closed_handle.v_q_pi;
     v_d_ff_temp = foc_speed_closed_handle.v_d_ff;
@@ -70,6 +74,11 @@ static void speed_closed_callback(void)
 
 void speedClosed_init(float speed_rpm)
 {
+    const float flux_weak_u_ref_ratio = 0.95f;
+    const float flux_weak_kp = 2.8f;
+    const float flux_weak_ki = 1000.0f;
+    const float flux_weak_id_min = -0.8f;
+
     // 初始化速度环 PID 控制器
     pid_init(&pid_id, PID_TYPE_CURRENT, 5.02f, 2670.0f, -U_DC / 2.0f, U_DC / 2.0f);
     pid_init(&pid_iq, PID_TYPE_CURRENT, 5.02f, 2670.0f, -U_DC / 2.0f, U_DC / 2.0f); // 按电流环带宽1000Hz整定
@@ -78,6 +87,10 @@ void speedClosed_init(float speed_rpm)
 
     // 初始化 FOC 控制句柄
     foc_init(&foc_speed_closed_handle, &pid_id, &pid_iq, &pid_speed);
+
+    // 初始化弱磁控制器（仅速度闭环启用）
+    fluxWeaken_init(&flux_weak_handle, U_DC * FOC_VOLTAGE_LIMIT_SVPWM_SCALE, flux_weak_u_ref_ratio, flux_weak_kp, flux_weak_ki, flux_weak_id_min);
+    foc_set_fluxWeak(&foc_speed_closed_handle, &flux_weak_handle);
 
     // 设置目标速度
     foc_set_id(&foc_speed_closed_handle, 0.0f);
@@ -109,7 +122,7 @@ void speedClosedDebug_print_info(void)
     }
     float pll_angle_deg = pll_angle_normalized * 57.2958f;
 
-    float data[16] = {speed_rpm_temp, angle_deg, pll_angle_deg, id_temp, iq_temp, ia_temp, ib_temp, ic_temp,
-                      target_iq_temp, v_d_pi_temp, v_q_pi_temp, v_d_ff_temp, v_q_ff_temp, v_d_out_temp, v_q_out_temp, v_mag_temp};
-    vofa_send(data, 16);
+    float data[17] = {speed_rpm_temp, angle_deg, pll_angle_deg, id_temp, iq_temp, ia_temp, ib_temp, ic_temp,
+                      target_iq_temp, target_id_temp, v_d_pi_temp, v_q_pi_temp, v_d_ff_temp, v_q_ff_temp, v_d_out_temp, v_q_out_temp, v_mag_temp};
+    vofa_send(data, 17);
 }

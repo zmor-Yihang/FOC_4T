@@ -35,7 +35,7 @@
 #define FLUX_OBSERVER_TS_S                (1.0 / FOC_CURRENT_LOOP_FREQ_HZ) // 观测器执行周期(s)
 #define FLUX_OBSERVER_PLL_KP              1776.0f                          // PLL比例增益
 #define FLUX_OBSERVER_PLL_KI              1.58e6f                         // PLL积分增益
-#define FLUX_OBSERVER_PLL_SPEED_LIMIT_RPM 3000.0f                          // 机械转速限幅(rpm)
+#define FLUX_OBSERVER_PLL_SPEED_LIMIT_RPM 5000.0f                          // 机械转速限幅(rpm)
 
 
 // 数据类型

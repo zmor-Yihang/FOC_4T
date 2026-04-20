@@ -94,7 +94,7 @@ void fluxObseverClosed_init(float speed_rpm)
     foc_set_speed(&foc_fluxObserver_handle, speed_rpm);
 
     // 零点对齐
-    zero_alignment(&foc_fluxObserver_handle);
+    // zero_alignment(&foc_fluxObserver_handle);
 
     // 初始化磁链观测器
     fluxObserver_init(&flux_observer, &flux_observer_cfg);

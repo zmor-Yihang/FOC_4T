@@ -24,7 +24,7 @@ static inline float encoder_covert_countToElectricalAngle(float count)
  * @brief 获取当前电角度
  * @note 编码器未通信完成时，采用预测的电角度
  */
-static void encoder_get_current_elec_angle(void)
+static void encoder_get_currentElectricalAngle(void)
 {
     uint16_t raw_count = 0U;
 
@@ -53,7 +53,7 @@ void encoder_init(void)
  */
 void encoder_update(void)
 {
-    encoder_get_current_elec_angle(); // 获取当前电角度
+    encoder_get_currentElectricalAngle(); // 获取当前电角度
 
     float phase_error = wrap_pm_pi(current_elec_angle - pll_phase_rad); // 计算当前相位误差
     float speed_integral_step = ENCODER_PLL_KI * phase_error * ENCODER_SPEED_SAMPLE_TIME;

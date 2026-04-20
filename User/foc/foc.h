@@ -6,6 +6,8 @@
 #include "../alg/pid.h"
 #include "../app/user_config.h"
 
+typedef struct flux_weak flux_weak_t;
+
 // 对齐过程相关参数
 #define FOC_ALIGN_D_AXIS_VOLTAGE (0.3f)
 #define FOC_ALIGN_SETTLE_TIME_MS (500U)
@@ -26,6 +28,8 @@ typedef struct
     float target_id;
     float target_iq;
 
+    float v_d_cmd; /* D轴电压请求(限幅前) */
+    float v_q_cmd; /* Q轴电压请求(限幅前) */
     float v_d_out; /* D轴电压输出 */
     float v_q_out; /* Q轴电压输出 */
     float v_d_pi;  /* D轴PI输出 */
@@ -36,6 +40,7 @@ typedef struct
     pid_controller_t *pid_id; /* PID控制器 */
     pid_controller_t *pid_iq;
     pid_controller_t *pid_speed;
+    flux_weak_t *flux_weak;
 
     abc_t duty_cycle; /* 输出占空比 */
 
@@ -54,6 +59,7 @@ void loopControl_run_speedLoop(foc_t *handle, dq_t i_dq, float angle_el, float s
 void foc_set_id(foc_t *handle, float id);
 void foc_set_iq(foc_t *handle, float iq);
 void foc_set_speed(foc_t *handle, float speed_rpm);
+void foc_set_fluxWeak(foc_t *handle, flux_weak_t *flux_weak);
 
 #endif /* __FOC_H__ */
 

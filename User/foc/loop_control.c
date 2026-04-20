@@ -2,6 +2,7 @@
 
 #include "foc.h"
 #include "gate_drive.h"
+#include "../adv_alg/weaken_flux.h"
 
 /**
  * @brief 电流闭环运行
@@ -43,6 +44,8 @@ void loopControl_run_currentLoop(foc_t *handle, dq_t i_dq, float angle_el, float
     handle->v_q_pi = v_q_pi;
     handle->v_d_ff = v_d_ff;
     handle->v_q_ff = v_q_ff;
+    handle->v_d_cmd = v_d_unsat;
+    handle->v_q_cmd = v_q_unsat;
     handle->v_d_out = v_d_unsat;
     handle->v_q_out = v_q_unsat;
 
@@ -85,8 +88,14 @@ void loopControl_run_speedLoop(foc_t *handle, dq_t i_dq, float angle_el, float s
         handle->target_iq = pid_calculate(handle->pid_speed, handle->target_speed, speed_rpm, speed_loop_dt);
     }
 
-    /* Id 目标设为 0 */
-    handle->target_id = 0.0f;
+    if (handle->flux_weak != NULL)
+    {
+        handle->target_id = fluxWeak_calculate(handle->flux_weak, handle->v_d_cmd, handle->v_q_cmd, FOC_CURRENT_LOOP_DT_S);
+    }
+    else
+    {
+        handle->target_id = 0.0f;
+    }
 
     /* 复用电流闭环 */
     loopControl_run_currentLoop(handle, i_dq, angle_el, speed_rpm);

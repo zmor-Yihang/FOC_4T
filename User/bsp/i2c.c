@@ -22,7 +22,7 @@ void i2c_init(void)
 
     hi2c3.Instance = I2C3;                                // 选择I2C3
     hi2c3.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;     // 不使能无拉伸模式, 即允许时钟拉伸
-    hi2c3.Init.Timing = 0x4041080F;                       // 时序参数: 1000kHz
+    hi2c3.Init.Timing = 0x10C31027;                       // 时序参数: 1000kHz
     hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;  // 7位地址模式
     hi2c3.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE; // 单地址模式
     hi2c3.Init.OwnAddress1 = 0;                           // 自身地址
