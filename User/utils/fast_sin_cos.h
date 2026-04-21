@@ -71,17 +71,16 @@
     // 硬件明确支持 FMA
     #define MY_FMA(a, b, c) __builtin_fmaf(a, b, c) 
 #else
-    // 即使走这里，由于你开了 -O3，编译器通常也会自动生成 FMA 指令
+    // 开了 -O3，编译器也会自动生成 FMA 指令
     #define MY_FMA(a, b, c) ((a) * (b) + (c))
 #endif
 
 /**
  * @brief 正弦函数多项式逼近辅助函数
  * 
- * 计算正弦函数泰勒级数展开的高次项部分，使用预计算系数的多项式。
- * 该函数是 sin(x) ≈ x + x^3 * f1(x^2) 中的 f1 部分。
+ * 计算正弦函数契比雪夫展开的高次项部分，使用预计算系数的多项式。
  * 
- * @param x 输入值（应为x^2）
+ * @param x 输入值
  * @return 多项式计算结果
  * 
  * @note 使用FMA指令优化计算性能
@@ -138,7 +137,7 @@ FAST_MATH_OPT static inline float reduce_payne_hanek(float x, int *quadrant)
     float qf = rintf(x * M_1_PI_F);
     *quadrant = (int)qf;
     
-    // x = x - q * PI (使用高精度分步减法)
+    // x = x - q * PI (高精度分步减法)
     // 这一步解决了大数输入的精度丢失问题
     float r = MY_FMA(qf, -PI_A, x);
     r = MY_FMA(qf, -PI_B, r);
@@ -177,19 +176,16 @@ FAST_MATH_OPT static inline float fast_sin(float x)
  * @brief 快速余弦函数
  * 
  * 使用多项式逼近和角度归约算法计算余弦值。
- * 算法基于 cos(x) ≈ 1 + x^2 * f2(x^2) 近似公式。
  * 
  * @param x 输入角度值（弧度）
  * @return 余弦值
- * 
- * @note 使用了FMA优化和Payne-Hanek归约算法提高精度和性能
  */
 FAST_MATH_OPT static inline float fast_cos(float x)
 {
     int q;
     x = reduce_payne_hanek(x, &q);
 
-    // 计算 cos(x) ~= 1 + x^2 * f2(x^2)
+    // 计算 cos(x)
     float x2 = x * x;
     float result = MY_FMA(x2, f2_opt(x2), 1.0f);
 
@@ -203,10 +199,6 @@ FAST_MATH_OPT static inline float fast_cos(float x)
 
 /**
  * @brief 快速正弦/余弦函数（并行计算）
- * 
- * 同时计算一个角度的正弦和余弦值，通过并行计算提高效率。
- * 使用无分支优化技术处理符号位，避免条件判断带来的性能损失。
- * 
  * @param x 输入角度值（弧度）
  * @param sin_x 输出参数，返回正弦值
  * @param cos_x 输出参数，返回余弦值
@@ -216,12 +208,12 @@ FAST_MATH_OPT static inline float fast_cos(float x)
 FAST_MATH_OPT static inline void fast_sin_cos(float x, float *sin_x, float *cos_x)
 {
     int q;
-    // 1. 统一归约
+
+    // 统一归约
     x = reduce_payne_hanek(x, &q);
     
     float x2 = x * x;
 
-    // 2. 并行计算多项式 
     // 计算 Sin 部分
     float p_sin = f1_opt(x2);
     // 计算 Cos 部分
@@ -230,9 +222,8 @@ FAST_MATH_OPT static inline void fast_sin_cos(float x, float *sin_x, float *cos_
     float s = MY_FMA(x * x2, p_sin, x);
     float c = MY_FMA(x2, p_cos, 1.0f);
 
-    // 3. 符号处理 (Branchless 优化)
     // 如果 q 是奇数，sign_mask 为 0x80000000 (float 的符号位)，否则为 0
-    // 直接操作浮点数的位表示来改变符号，通常比分支更快
+    // 直接操作浮点数的位表示来改变符号
     uint32_t sign_mask = (q & 1) << 31;
     
     union { float f; uint32_t i; } us, uc;
