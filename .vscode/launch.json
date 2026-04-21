@@ -7,7 +7,7 @@
             "request": "launch",
             "name": "Debug: OpenOCD",
             "servertype": "openocd",
-            "executable": "build/Debug/FOC.elf",
+            "executable": "build/Debug/FOC_2804.elf",
             "runToEntryPoint": "main",
             "configFiles": [
                 "interface/cmsis-dap.cfg",
