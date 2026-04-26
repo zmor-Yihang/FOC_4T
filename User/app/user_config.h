@@ -25,10 +25,10 @@
 #define FOC_ELEC_ANGLE_TRIM_RAD          0.0f     // 电角度手动微调量(rad)，正常情况下保持为0，仅在排查固定偏差时临时微调
 
 // 编码器参数
-#define ENCODER_COUNT_SWAP               0        // 1：启用编码器计数翻转
-#define ENCODER_PLL_KP                   1200.0f  // 编码器速度 PLL 比例增益  130Hz带宽
-#define ENCODER_PLL_KI                   0.7e6f   // 编码器速度 PLL 积分增益
-#define ENCODER_PLL_SPEED_LIMIT_RPM      5000.0f  // 编码器 PLL 机械转速限幅(rpm)
+#define ENCODER_COUNT_SWAP               0         // 1：启用编码器计数翻转
+#define ENCODER_PLL_KP                   1776.0f   // 编码器速度 PLL 比例增益  200Hz带宽
+#define ENCODER_PLL_KI                   1.58e6f   // 编码器速度 PLL 积分增益
+#define ENCODER_PLL_SPEED_LIMIT_RPM      5000.0f   // 编码器 PLL 机械转速限幅(rpm)
 
 // 电流环控制参数
 #define CURRENT_PID_KP                   5.0f           // 电流环PI比例系数  带宽1000Hz
