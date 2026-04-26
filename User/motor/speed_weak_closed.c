@@ -1,6 +1,9 @@
-#include "speed_closed.h"
+#include "speed_weak_closed.h"
+#include "../adv_alg/weaken_flux.h"
+#include "../bsp/i2c.h"
 
-static foc_t foc_speed_closed_handle;
+static foc_t foc_speed_weak_closed_handle;
+static flux_weak_t flux_weak_handle;
 
 static pid_controller_t pid_id;
 static pid_controller_t pid_iq;
@@ -16,8 +19,6 @@ static float iq_temp = 0.0f;
 static float ia_temp = 0.0f;
 static float ib_temp = 0.0f;
 static float ic_temp = 0.0f;
-static float target_iq_temp = 0.0f;
-static float target_id_temp = 0.0f;
 static float v_d_pi_temp = 0.0f;
 static float v_q_pi_temp = 0.0f;
 static float v_d_ff_temp = 0.0f;
@@ -25,15 +26,16 @@ static float v_q_ff_temp = 0.0f;
 static float v_d_out_temp = 0.0f;
 static float v_q_out_temp = 0.0f;
 static float v_mag_temp = 0.0f;
+static float i2c_read_state_temp = 0.0f;
 
-static void speed_closed_callback(void)
+static void speed_weak_closed_callback(void)
 {
     // 更新速度
     encoder_update();
 
     // 控制使用PLL估计角度；编码器实测角度只用于调试观察
-    float angle_el = encoder_get_pllAngle() - foc_speed_closed_handle.angle_offset;
-    float angle_meas = encoder_get_encoderAngle() - foc_speed_closed_handle.angle_offset;
+    float angle_el = encoder_get_pllAngle() - foc_speed_weak_closed_handle.angle_offset;
+    float angle_meas = encoder_get_encoderAngle() - foc_speed_weak_closed_handle.angle_offset;
     float speed_feedback = encoder_get_pllSpeed();
 
     // 获取电流反馈值
@@ -56,21 +58,20 @@ static void speed_closed_callback(void)
     angle_el_temp = angle_meas;
     pll_angle_el_temp = angle_el;
 
-    // 速度闭环
-    loopControl_run_speedLoop(&foc_speed_closed_handle, i_dq, angle_el, speed_feedback, FOC_SPEED_LOOP_DIVIDER);
+    // 带弱磁速度闭环
+    loopControl_run_speedWeakLoop(&foc_speed_weak_closed_handle, i_dq, angle_el, speed_feedback, FOC_SPEED_LOOP_DIVIDER);
 
-    target_iq_temp = foc_speed_closed_handle.target_iq;
-    target_id_temp = foc_speed_closed_handle.target_id;
-    v_d_pi_temp = foc_speed_closed_handle.v_d_pi;
-    v_q_pi_temp = foc_speed_closed_handle.v_q_pi;
-    v_d_ff_temp = foc_speed_closed_handle.v_d_ff;
-    v_q_ff_temp = foc_speed_closed_handle.v_q_ff;
-    v_d_out_temp = foc_speed_closed_handle.v_d_out;
-    v_q_out_temp = foc_speed_closed_handle.v_q_out;
+    v_d_pi_temp = foc_speed_weak_closed_handle.v_d_pi;
+    v_q_pi_temp = foc_speed_weak_closed_handle.v_q_pi;
+    v_d_ff_temp = foc_speed_weak_closed_handle.v_d_ff;
+    v_q_ff_temp = foc_speed_weak_closed_handle.v_q_ff;
+    v_d_out_temp = foc_speed_weak_closed_handle.v_d_out;
+    v_q_out_temp = foc_speed_weak_closed_handle.v_q_out;
     v_mag_temp = sqrtf(v_d_out_temp * v_d_out_temp + v_q_out_temp * v_q_out_temp);
+    i2c_read_state_temp = (float)i2c_get_readState();
 }
 
-void speedClosed_init(float speed_rpm)
+void speedWeakClosed_init(float speed_rpm)
 {
     // 初始化速度环 PID 控制器
     pid_init(&pid_id, PID_TYPE_CURRENT, CURRENT_PID_KP, CURRENT_PID_KI, CURRENT_PID_OUT_MIN, CURRENT_PID_OUT_MAX);
@@ -79,20 +80,24 @@ void speedClosed_init(float speed_rpm)
     pid_init(&pid_speed, PID_TYPE_SPEED, SPEED_PID_KP, SPEED_PID_KI, SPEED_PID_OUT_MIN, SPEED_PID_OUT_MAX); // 按 δ = 16 整定的
 
     // 初始化 FOC 控制句柄
-    foc_init(&foc_speed_closed_handle, &pid_id, &pid_iq, &pid_speed);
+    foc_init(&foc_speed_weak_closed_handle, &pid_id, &pid_iq, &pid_speed);
+
+    // 初始化弱磁控制器
+    fluxWeaken_init(&flux_weak_handle, U_DC * FOC_VOLTAGE_LIMIT_SVPWM_SCALE, FLUX_WEAK_U_REF_RATIO, FLUX_WEAK_KP, FLUX_WEAK_KI, FLUX_WEAK_ID_MIN);
+    foc_set_fluxWeak(&foc_speed_weak_closed_handle, &flux_weak_handle);
 
     // 设置目标速度
-    foc_set_id(&foc_speed_closed_handle, 0.0f);
-    foc_set_speed(&foc_speed_closed_handle, speed_rpm);
+    foc_set_id(&foc_speed_weak_closed_handle, 0.0f);
+    foc_set_speed(&foc_speed_weak_closed_handle, speed_rpm);
 
     // 零点对齐
-    zero_alignment(&foc_speed_closed_handle);
+    zero_alignment(&foc_speed_weak_closed_handle);
 
     // 注册回调函数
-    adc_register_injectedCallback(speed_closed_callback);
+    adc_register_injectedCallback(speed_weak_closed_callback);
 }
 
-void speedClosedDebug_print_info(void)
+void speedWeakClosedDebug_print_info(void)
 {
     // 归一化角度到 [0, 2π) 范围
     float angle_normalized = fmodf(angle_el_temp, MATH_TWO_PI);
@@ -111,7 +116,7 @@ void speedClosedDebug_print_info(void)
     }
     float pll_angle_deg = pll_angle_normalized * 57.2958f;
 
-    float data[17] = {speed_rpm_temp, angle_deg, pll_angle_deg, id_temp, iq_temp, ia_temp, ib_temp, ic_temp,
-                      target_iq_temp, target_id_temp, v_d_pi_temp, v_q_pi_temp, v_d_ff_temp, v_q_ff_temp, v_d_out_temp, v_q_out_temp, v_mag_temp};
-    vofa_send(data, 17);
+    float data[16] = {speed_rpm_temp, angle_deg, pll_angle_deg, id_temp, iq_temp, ia_temp, ib_temp, ic_temp,
+                      v_d_pi_temp, v_q_pi_temp, v_d_ff_temp, v_q_ff_temp, v_d_out_temp, v_q_out_temp, v_mag_temp, i2c_read_state_temp};
+    vofa_send(data, 16);
 }

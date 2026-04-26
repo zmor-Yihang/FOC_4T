@@ -1,6 +1,7 @@
 #include <math.h>
 
 #include "weaken_flux.h"
+#include "../app/user_config.h"
 
 static float clampf(float value, float min_value, float max_value)
 {
@@ -25,7 +26,7 @@ void fluxWeaken_init(flux_weak_t *flux_weak, float u_dc, float u_ref_ratio, floa
     pid_init(&flux_weak->pid, PID_TYPE_SPEED, kp, ki, id_min, 0.0f);
 
     flux_weak->u_current_filtered = 0.0f;
-    flux_weak->voltage_filter_const = 0.02f;
+    flux_weak->voltage_filter_const = FLUX_WEAK_VOLTAGE_FILTER_CONST;
 }
 
 float fluxWeak_calculate(flux_weak_t *flux_weak, float v_d, float v_q, float dt)

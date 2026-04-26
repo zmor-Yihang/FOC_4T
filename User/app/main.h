@@ -15,6 +15,7 @@
 
 #include "../motor/current_closed.h"
 #include "../motor/speed_closed.h"
+#include "../motor/speed_weak_closed.h"
 #include "../motor/flux_observer_closed.h"
 
 

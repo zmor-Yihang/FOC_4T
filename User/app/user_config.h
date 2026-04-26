@@ -15,7 +15,7 @@
 #define MOTOR_RS_Ω                       1.2f     // 定子电阻，实测1欧
 #define MOTOR_LD_H                       0.86e-3f // d轴电感(H)
 #define MOTOR_LQ_H                       0.86e-3f // q轴电感(H)
-#define MOTOR_PSI_F                      0.0033f  // 永磁体磁链(Wb)
+#define MOTOR_PSI_F                      0.0035f  // 永磁体磁链(Wb)
 #define MOTOR_PHASE_SWAP                 1        // 1：启用相序翻转
 
 // 控制参数
@@ -26,15 +26,34 @@
 
 // 编码器参数
 #define ENCODER_COUNT_SWAP               0        // 1：启用编码器计数翻转
-#define ENCODER_PLL_KP                   1776.0f  // 编码器速度 PLL 比例增益
-#define ENCODER_PLL_KI                   1.58e6f  // 编码器速度 PLL 积分增益
-#define ENCODER_PLL_SPEED_LIMIT_RPM      3000.0f  // 编码器 PLL 机械转速限幅(rpm)
+#define ENCODER_PLL_KP                   1200.0f  // 编码器速度 PLL 比例增益  130Hz带宽
+#define ENCODER_PLL_KI                   0.7e6f   // 编码器速度 PLL 积分增益
+#define ENCODER_PLL_SPEED_LIMIT_RPM      5000.0f  // 编码器 PLL 机械转速限幅(rpm)
+
+// 电流环控制参数
+#define CURRENT_PID_KP                   5.0f           // 电流环PI比例系数  带宽1000Hz
+#define CURRENT_PID_KI                   2670.0f        // 电流环PI积分系数
+#define CURRENT_PID_OUT_MIN              (-U_DC / 2.0f) // 电流环输出下限
+#define CURRENT_PID_OUT_MAX              (U_DC / 2.0f)  // 电流环输出上限
+
+// 速度环参数
+#define SPEED_PID_KP                     0.004f       // 速度环PI比例系数  // 按 δ = 16 整定的，带宽1000 / 16 = 62.5Hz
+#define SPEED_PID_KI                     2.5f         // 速度环PI积分系数
+#define SPEED_PID_OUT_MIN                -0.8f        // 速度环输出下限
+#define SPEED_PID_OUT_MAX                0.8f         // 速度环输出上限
+
+// 弱磁控制参数
+#define FLUX_WEAK_U_REF_RATIO        0.95f     // 弱磁电压参考比例
+#define FLUX_WEAK_KP                 0.15f     // 弱磁PI比例系数
+#define FLUX_WEAK_KI                 3000.0f   // 弱磁PI积分系数
+#define FLUX_WEAK_ID_MIN             -0.8f     // 弱磁d轴最小电流(A)
+#define FLUX_WEAK_VOLTAGE_FILTER_CONST 0.05f   // 弱磁电压反馈一阶滤波系数(alpha)
 
 // 无感磁链观测器参数
-#define FLUX_OBSERVER_GAMMA               3.0e7f                           // 观测器非线性增益
+#define FLUX_OBSERVER_GAMMA               5.0e7f                           // 观测器非线性增益
 #define FLUX_OBSERVER_TS_S                (1.0 / FOC_CURRENT_LOOP_FREQ_HZ) // 观测器执行周期(s)
-#define FLUX_OBSERVER_PLL_KP              1776.0f                          // PLL比例增益
-#define FLUX_OBSERVER_PLL_KI              1.58e6f                         // PLL积分增益
+#define FLUX_OBSERVER_PLL_KP              850.0f                           // PLL比例增益
+#define FLUX_OBSERVER_PLL_KI              0.4e6f                           // PLL积分增益
 #define FLUX_OBSERVER_PLL_SPEED_LIMIT_RPM 5000.0f                          // 机械转速限幅(rpm)
 
 

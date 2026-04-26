@@ -82,8 +82,8 @@ static void fluxObserver_closed_callback(void)
 void fluxObseverClosed_init(float speed_rpm)
 {
     // 初始化电流环与速度环 PID 控制器
-    pid_init(&pid_id, PID_TYPE_CURRENT, 5.02f, 2670.0f, -U_DC / 2.0f, U_DC / 2.0f);
-    pid_init(&pid_iq, PID_TYPE_CURRENT, 5.02f, 2670.0f, -U_DC / 2.0f, U_DC / 2.0f);
+    pid_init(&pid_id, PID_TYPE_CURRENT, 2.02f, 2670.0f, -U_DC / 2.0f, U_DC / 2.0f);
+    pid_init(&pid_iq, PID_TYPE_CURRENT, 2.02f, 2670.0f, -U_DC / 2.0f, U_DC / 2.0f);
     pid_init(&pid_speed, PID_TYPE_SPEED, 0.004f, 2.5f, -1.0f, 1.0f);
 
     // 初始化 FOC 控制句柄

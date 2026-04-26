@@ -34,13 +34,24 @@ void as5600_init(void)
  */
 uint8_t as5600_poll_rawCount(uint16_t *raw_count)
 {
-    if (i2c_get_readState() == I2C_READ_STATE_BUSY)
+    i2c_readState_e read_state = i2c_get_readState();
+
+    if (read_state == I2C_READ_STATE_DONE)
+    {
+        *raw_count = as5600_build_rawCount(as5600_i2c_rx_buf);
+        as5600_startRead_rawCount(); // 消费完立即发起下一次读取
+        return 1;
+    }
+
+    if ((read_state == I2C_READ_STATE_IDLE) || (read_state == I2C_READ_STATE_ERROR))
+    {
+        as5600_startRead_rawCount(); // 空闲或错误态下重新拉起读取；错误态会先触发I2C恢复
+    }
+
+    if ((read_state == I2C_READ_STATE_BUSY) || (read_state == I2C_READ_STATE_RECOVERING))
     {
         return 0;
     }
 
-    *raw_count = as5600_build_rawCount(as5600_i2c_rx_buf);
-    as5600_startRead_rawCount(); // 消费完立即发起下一次读取
-
-    return 1;
+    return 0;
 }

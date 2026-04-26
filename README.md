@@ -103,9 +103,9 @@ fluxObseverClosedDebug_print_info();  // 无感闭环调试
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
 | `MOTOR_POLE_PAIRS` | 7 | 电机极对数 |
-| `MOTOR_RS_Ω` | 1.2 Ω | 定子电阻 |
+| `MOTOR_RS_Ω` | 2.5 Ω | 定子电阻 |
 | `MOTOR_LD_H` / `MOTOR_LQ_H` | 0.86 mH | D/Q 轴电感 |
-| `MOTOR_PSI_F` | 0.0033 Wb | 永磁体磁链 |
+| `MOTOR_PSI_F` | 0.0035 Wb | 永磁体磁链 |
 | `FOC_CURRENT_LOOP_FREQ_HZ` | 10000 | 电流环频率 |
 | `FOC_SPEED_LOOP_DIVIDER` | 10 | 速度环分频系数 |
 | `FOC_DECOUPLING_ENABLE` | 1 | 前馈解耦开关 |
