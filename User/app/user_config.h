@@ -29,6 +29,8 @@
 #define ENCODER_PLL_KP                   1776.0f   // 编码器速度 PLL 比例增益  200Hz带宽
 #define ENCODER_PLL_KI                   1.58e6f   // 编码器速度 PLL 积分增益
 #define ENCODER_PLL_SPEED_LIMIT_RPM      5000.0f   // 编码器 PLL 机械转速限幅(rpm)
+#define ENCODER_PLL_ANGLE_COMP_ENABLE    0         // 1：启用拍延时补偿
+#define ENCODER_PLL_ANGLE_COMP_DELAY_S   0.0f      // 输出补偿延时(s)
 
 // 电流环控制参数
 #define CURRENT_PID_KP                   5.0f           // 电流环PI比例系数  带宽1000Hz

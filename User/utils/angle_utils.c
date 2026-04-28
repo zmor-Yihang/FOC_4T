@@ -30,3 +30,9 @@ float wrap_0_2pi(float angle_rad)
 
     return angle_rad;
 }
+
+float angle_delay_compensate(float angle_rad, float speed_rad_s, float delay_s)
+{
+    float compensated_angle = angle_rad + speed_rad_s * delay_s;
+    return wrap_0_2pi(compensated_angle);
+}

@@ -85,7 +85,11 @@ void encoder_update(void)
  */
 float encoder_get_pllAngle(void)
 {
+#if (ENCODER_PLL_ANGLE_COMP_ENABLE == 1)
+    return angle_delay_compensate(pll_phase_rad, pll_speed_rad_s, ENCODER_PLL_ANGLE_COMP_DELAY_S);
+#else
     return pll_phase_rad;
+#endif /* ENCODER_PLL_ANGLE_COMP_ENABLE */
 }
 
 /**
