@@ -48,20 +48,19 @@ void fluxObserver_estimate(fluxobserver_t *obs)
     float eta_alpha = obs->xhat_alpha - cfg->ls * obs->i_alpha;
     float eta_beta = obs->xhat_beta - cfg->ls * obs->i_beta;
 
-    // r2 = ||η||^2 = η_alpha^2 + η_beta^2
+    // r2 = ||η||^2 = η_alpha^2 + η_beta^2，观测的磁链模长的平方
     float r2 = eta_alpha * eta_alpha + eta_beta * eta_beta;
 
     // s = psi_m^2 - r2
-    // s > 0: 估计磁链在圆内
-    // s < 0: 估计磁链在圆外
-    float psi_m2 = cfg->psi_m * cfg->psi_m;
-    float s = psi_m2 - r2;
+    float psi_m2 = cfg->psi_m * cfg->psi_m; // 实际磁链模长的平方
+    float s = psi_m2 - r2;                  // 误差项，s越大表示估计越偏离实际磁链圆
 
     // dxhat = y + 0.5 * gamma * η * s
     float dxhat_alpha = y_alpha + 0.5f * cfg->gamma * eta_alpha * s;
     float dxhat_beta = y_beta + 0.5f * cfg->gamma * eta_beta * s;
 
     // xhat[k+1] = xhat[k] + Ts * dxhat
+    // 更新下一拍的xhat，实际就是积分，会有积分偏移，待改进
     obs->xhat_alpha += cfg->ts * dxhat_alpha;
     obs->xhat_beta += cfg->ts * dxhat_beta;
 
@@ -88,7 +87,6 @@ void fluxObserver_estimate(fluxobserver_t *obs)
     // 每个控制周期都使用比例校正项 + 当前速度估计推进 PLL 相位
     obs->z1 = wrap_pm_pi(obs->z1 + (obs->speed_rad_s + obs->k_pll_kp * e_theta) * cfg->ts);
     obs->z2 = obs->speed_rad_s;
-
 
     // 电角速度 -> 机械转速 (rpm)
     // omega_mech = omega_elec / poles

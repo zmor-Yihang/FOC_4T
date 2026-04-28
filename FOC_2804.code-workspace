@@ -24,7 +24,11 @@
             "cstdint": "c",
             "random": "c",
             "cstdio": "c",
-            "compare": "c"
+            "compare": "c",
+            "bit": "c",
+            "limits": "c",
+            "new": "c",
+            "cstdlib": "c"
         },
         "[yaml]": {
             "editor.insertSpaces": true,

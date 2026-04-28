@@ -77,20 +77,28 @@ void i2c_init(void)
     i2c3_read_state = I2C_READ_STATE_IDLE;
 }
 
+/**
+ * @brief 阻塞读取
+ */
 void i2c_read_bytesBlock(uint16_t dev_addr, uint16_t reg, uint8_t *recv_buffer, uint8_t len)
 {
     HAL_I2C_Mem_Read(&hi2c3, dev_addr, reg, I2C_MEMADD_SIZE_8BIT, recv_buffer, len, 1);
 }
 
+/**
+ * @brief 异步读取
+ */
 void i2c_read_bytesAsync(uint16_t dev_addr, uint16_t reg, uint8_t *recv_buffer, uint8_t len)
 {
     i2c_readState_e read_state = i2c_get_readState();
 
+    // 如果总线状态忙或者正在错误恢复，直接返回
     if ((read_state == I2C_READ_STATE_BUSY) || (read_state == I2C_READ_STATE_RECOVERING))
     {
         return;
     }
 
+    // 如果总线状态错误，尝试恢复总线
     if (read_state == I2C_READ_STATE_ERROR)
     {
         if (i2c3_recover_bus() != HAL_OK)
@@ -99,64 +107,48 @@ void i2c_read_bytesAsync(uint16_t dev_addr, uint16_t reg, uint8_t *recv_buffer, 
         }
     }
 
+    // 尝试读取
     if (HAL_I2C_Mem_Read_IT(&hi2c3, dev_addr, reg, I2C_MEMADD_SIZE_8BIT, recv_buffer, len) == HAL_OK)
     {
-        i2c3_async_start_ms = HAL_GetTick();
-        i2c3_read_state = I2C_READ_STATE_BUSY;
+        i2c3_async_start_ms = HAL_GetTick();   // 记录开始时间
+        i2c3_read_state = I2C_READ_STATE_BUSY; // 设置总线状态为忙
     }
-    else
+    else // 读取失败
     {
-        i2c3_error_count++;
-        i2c3_read_state = I2C_READ_STATE_ERROR;
+        i2c3_error_count++;                     // 错误计数加1
+        i2c3_read_state = I2C_READ_STATE_ERROR; // 设置总线状态为错误
     }
 }
 
+/**
+ * @brief 获取总线状态
+ * @note 错误状态有两种，一个未知错误，一个是总线超时
+ */
 i2c_readState_e i2c_get_readState(void)
 {
     if (i2c3_read_state == I2C_READ_STATE_BUSY)
     {
+        // 获取当前时间
         uint32_t now_ms = HAL_GetTick();
+
+        // 判断异步读取是否超时
         if ((now_ms - i2c3_async_start_ms) > I2C3_ASYNC_TIMEOUT_MS)
         {
-            i2c3_timeout_count++;
-            i2c3_error_count++;
-            i2c3_read_state = I2C_READ_STATE_ERROR;
+            i2c3_timeout_count++;                   // 超时计数加1
+            i2c3_error_count++;                     // 错误计数加1
+            i2c3_read_state = I2C_READ_STATE_ERROR; // 设置总线状态为错误
         }
     }
 
     return i2c3_read_state;
 }
 
+/**
+ * @brief 读取总线状态
+ */
 void i2c_set_readState(i2c_readState_e current_state)
 {
     i2c3_read_state = current_state;
-}
-
-void I2C3_EV_IRQHandler(void)
-{
-    HAL_I2C_EV_IRQHandler(&hi2c3);
-}
-
-void I2C3_ER_IRQHandler(void)
-{
-    HAL_I2C_ER_IRQHandler(&hi2c3);
-}
-
-void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
-{
-    if (hi2c->Instance == I2C3)
-    {
-        i2c3_read_state = I2C_READ_STATE_DONE;
-    }
-}
-
-void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
-{
-    if (hi2c->Instance == I2C3)
-    {
-        i2c3_error_count++;
-        i2c3_read_state = I2C_READ_STATE_ERROR;
-    }
 }
 
 uint32_t i2cDebug_get_errorCount(void)
@@ -173,3 +165,44 @@ uint32_t i2cDebug_get_recoverCount(void)
 {
     return i2c3_recover_count;
 }
+
+/**
+ * @brief I2C3事件中断处理函数
+ */
+void I2C3_EV_IRQHandler(void)
+{
+    HAL_I2C_EV_IRQHandler(&hi2c3);
+}
+
+/**
+ * @brief I2C3错误中断处理函数
+ */
+void I2C3_ER_IRQHandler(void)
+{
+    HAL_I2C_ER_IRQHandler(&hi2c3);
+}
+
+/**
+ * @brief I2C3接收完成中断处理函数
+ */
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
+{
+    if (hi2c->Instance == I2C3)
+    {
+        i2c3_read_state = I2C_READ_STATE_DONE;
+    }
+}
+
+/**
+ * @brief I2C3错误回调
+ */
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
+{
+    if (hi2c->Instance == I2C3)
+    {
+        i2c3_error_count++;
+        i2c3_read_state = I2C_READ_STATE_ERROR;
+    }
+}
+
+

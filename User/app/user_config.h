@@ -12,7 +12,7 @@
 
 // 电机参数
 #define MOTOR_POLE_PAIRS                 7        // 电机极对数
-#define MOTOR_RS_Ω                       1.2f     // 定子电阻，实测1欧
+#define MOTOR_RS_Ω                       1.5f     // 定子电阻，实测1欧
 #define MOTOR_LD_H                       0.86e-3f // d轴电感(H)
 #define MOTOR_LQ_H                       0.86e-3f // q轴电感(H)
 #define MOTOR_PSI_F                      0.0035f  // 永磁体磁链(Wb)
