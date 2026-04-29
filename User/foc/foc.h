@@ -93,10 +93,6 @@ void foc_alignment_zero(foc_t *handle);
 void foc_step(foc_t *handle, uint8_t speed_loop_divider, uint8_t position_loop_divider);
 
 /* 设置目标值 */
-void foc_set_id(foc_t *handle, float id);
-void foc_set_iq(foc_t *handle, float iq);
-void foc_set_speed(foc_t *handle, float speed_rpm);
-void foc_set_position(foc_t *handle, float position_rad);
-void foc_set_mode(foc_t *handle, foc_mode_t mode);
+void foc_set_cmd(foc_t *handle, const foc_cmd_t *cmd);
 
 #endif /* __FOC_H__ */

@@ -208,53 +208,53 @@ void motorControl_init(motor_ctrl_mode_t mode, const motor_ctrl_cmd_t *cmd)
     {
     case MOTOR_CTRL_MODE_CURRENT:
         /* 电流模式：直接给定 id/iq，适合电流环整定和开环力矩测试。 */
-        foc_set_mode(&motor_foc_handle, FOC_MODE_CURRENT);
+        motor_foc_handle.cmd.mode = FOC_MODE_CURRENT;
         motorControl_initCurrentPid();
-        foc_set_id(&motor_foc_handle, (cmd != NULL) ? cmd->id : 0.0f);
-        foc_set_iq(&motor_foc_handle, (cmd != NULL) ? cmd->iq : 0.0f);
+        motor_foc_handle.cmd.target_id = (cmd != NULL) ? cmd->id : 0.0f;
+        motor_foc_handle.cmd.target_iq = (cmd != NULL) ? cmd->iq : 0.0f;
         foc_alignment_zero(&motor_foc_handle);
         break;
 
     case MOTOR_CTRL_MODE_SPEED:
         /* 速度模式：速度 PI 输出 iq，id 固定为 0。 */
-        foc_set_mode(&motor_foc_handle, FOC_MODE_SPEED);
+        motor_foc_handle.cmd.mode = FOC_MODE_SPEED;
         motorControl_initCurrentPid();
         motorControl_initSpeedPid();
-        foc_set_id(&motor_foc_handle, 0.0f);
-        foc_set_speed(&motor_foc_handle, (cmd != NULL) ? cmd->speed_rpm : 0.0f);
+        motor_foc_handle.cmd.target_id = 0.0f;
+        motor_foc_handle.cmd.target_speed = (cmd != NULL) ? cmd->speed_rpm : 0.0f;
         foc_alignment_zero(&motor_foc_handle);
         break;
 
     case MOTOR_CTRL_MODE_POSITION:
         /* 位置模式：位置环 -> 速度环 -> 电流环，启动时将当前位置归零。 */
-        foc_set_mode(&motor_foc_handle, FOC_MODE_POSITION);
+        motor_foc_handle.cmd.mode = FOC_MODE_POSITION;
         motorControl_initCurrentPid();
         motorControl_initSpeedPid();
         motorControl_initPositionPid();
         foc_alignment_zero(&motor_foc_handle);
         encoder_update();
         encoder_reset_mechanicalPosition(0.0f);
-        foc_set_id(&motor_foc_handle, 0.0f);
-        foc_set_speed(&motor_foc_handle, 0.0f);
-        foc_set_position(&motor_foc_handle, (cmd != NULL) ? cmd->position_rad : 0.0f);
+        motor_foc_handle.cmd.target_id = 0.0f;
+        motor_foc_handle.cmd.target_speed = 0.0f;
+        motor_foc_handle.cmd.target_position = (cmd != NULL) ? cmd->position_rad : 0.0f;
         break;
 
     case MOTOR_CTRL_MODE_SPEED_WEAK:
         /* 弱磁速度模式：弱磁算法由 FLUX_WEAK_ENABLE 宏在 loop_control.c 中统一开关。 */
-        foc_set_mode(&motor_foc_handle, FOC_MODE_SPEED);
+        motor_foc_handle.cmd.mode = FOC_MODE_SPEED;
         motorControl_initCurrentPid();
         motorControl_initSpeedPid();
-        foc_set_id(&motor_foc_handle, 0.0f);
-        foc_set_speed(&motor_foc_handle, (cmd != NULL) ? cmd->speed_rpm : 0.0f);
+        motor_foc_handle.cmd.target_id = 0.0f;
+        motor_foc_handle.cmd.target_speed = (cmd != NULL) ? cmd->speed_rpm : 0.0f;
         foc_alignment_zero(&motor_foc_handle);
         break;
 
     case MOTOR_CTRL_MODE_FLUX_OBSERVER:
         /* 磁链观测器模式：用观测角度闭环，不做零点对齐，主要用于无感算法调试。 */
-        foc_set_mode(&motor_foc_handle, FOC_MODE_SPEED);
+        motor_foc_handle.cmd.mode = FOC_MODE_SPEED;
         motorControl_initFluxObserverPid();
-        foc_set_id(&motor_foc_handle, 0.0f);
-        foc_set_speed(&motor_foc_handle, (cmd != NULL) ? cmd->speed_rpm : 0.0f);
+        motor_foc_handle.cmd.target_id = 0.0f;
+        motor_foc_handle.cmd.target_speed = (cmd != NULL) ? cmd->speed_rpm : 0.0f;
         fluxObserver_init(&motor_flux_observer, &motor_flux_observer_cfg);
         motor_flux_observer.u_alpha = 0.0f;
         motor_flux_observer.u_beta = 0.0f;
@@ -370,13 +370,13 @@ void motorControl_debugPrint(void)
 void motorControl_setPosition(float position_rad)
 {
     /* 位置单位：机械弧度。 */
-    foc_set_position(&motor_foc_handle, position_rad);
+    motor_foc_handle.cmd.target_position = position_rad;
 }
 
 void motorControl_setPositionRev(float position_rev)
 {
     /* 位置单位：机械圈数，内部转换为机械弧度。 */
-    foc_set_position(&motor_foc_handle, position_rev * MATH_TWO_PI);
+    motor_foc_handle.cmd.target_position = position_rev * MATH_TWO_PI;
 }
 
 void motorControl_resetPosition(float position_rad)

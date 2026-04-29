@@ -101,24 +101,9 @@ void foc_alignment_zero(foc_t *handle)
 
 /**
  * @brief FOC 统一控制步进函数
- * 该函数应在电流环固定周期中断/任务中调用，每调用一次都会执行一次电流环。
- * 速度环和位置环通过分频计数器降低执行频率，从而形成：
- *
- * - 电流环：每次调用均执行，负责 d/q 轴电流 PI、解耦前馈、电压限幅和 PWM 输出。
- * - 速度环：每 speed_loop_divider 次电流环执行一次，输出 q 轴目标电流 target_iq。
- * - 位置环：每 position_loop_divider 次位置环计数触发一次，输出目标速度 target_speed。
- *
- * 不同控制模式下的调度关系：
- * - FOC_MODE_CURRENT：仅执行电流环，target_id/target_iq 由外部给定。
- * - FOC_MODE_SPEED：执行速度环 + 电流环，若 FLUX_WEAK_ENABLE 为 1 则叠加弱磁产生负 d 轴电流。
- * - FOC_MODE_POSITION：执行位置环 + 速度环 + 电流环，d 轴目标固定为 0，不参与弱磁。
- *
  * @param handle                 FOC 控制句柄，保存指令、反馈、控制器和内部状态
  * @param speed_loop_divider     速度环相对电流环的分频系数；为 0 时按每次都执行处理
  * @param position_loop_divider  位置环分频系数；为 0 时按每次都执行处理
- *
- * @note 调用本函数前，应确保 handle->feedback 中的电角度、电流、速度、位置等反馈量已更新。
- * @note 本函数内部会更新 handle->cmd.target_speed、target_iq、target_id 以及 handle->state 中的电压/PWM状态。
  */
 void foc_step(foc_t *handle, uint8_t speed_loop_divider, uint8_t position_loop_divider)
 {
@@ -268,27 +253,10 @@ void foc_step(foc_t *handle, uint8_t speed_loop_divider, uint8_t position_loop_d
     handle->state.duty_cycle = gateDrive_set_voltage(v_alphabeta);
 }
 
-void foc_set_id(foc_t *handle, float id)
+void foc_set_cmd(foc_t *handle, const foc_cmd_t *cmd)
 {
-    handle->cmd.target_id = id;
-}
-
-void foc_set_iq(foc_t *handle, float iq)
-{
-    handle->cmd.target_iq = iq;
-}
-
-void foc_set_speed(foc_t *handle, float speed_rpm)
-{
-    handle->cmd.target_speed = speed_rpm;
-}
-
-void foc_set_position(foc_t *handle, float position_rad)
-{
-    handle->cmd.target_position = position_rad;
-}
-
-void foc_set_mode(foc_t *handle, foc_mode_t mode)
-{
-    handle->cmd.mode = mode;
+    if (handle != NULL && cmd != NULL)
+    {
+        handle->cmd = *cmd;
+    }
 }
