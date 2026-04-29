@@ -1,5 +1,16 @@
-#ifndef __ANGLE_UTILS_H__
-#define __ANGLE_UTILS_H__
+#ifndef __UTILS_H__
+#define __UTILS_H__
+
+#include <stdint.h>
+#include "../app/user_config.h"
+
+/**
+ * @brief 分频调度判断函数
+ * @param counter  分频计数器指针，由调用方保存计数状态
+ * @param divider  分频系数，表示每调用 divider 次返回一次 1
+ * @return uint8_t 返回 1 表示本次应执行对应任务，返回 0 表示本次跳过
+ */
+uint8_t divider_ready(uint8_t *counter, uint8_t divider);
 
 /**
  * @brief 将角度包络到[-π, π]范围
@@ -24,6 +35,6 @@ float wrap_0_2pi(float angle_rad);
  * @param delay_s 总等效延时，单位s
  * @return 补偿后的电角度[0, 2π)
  */
-float angleUtils_compensate_delay(float angle_rad, float speed_rad_s, float delay_s);
+float angle_compensate_delay(float angle_rad, float speed_rad_s, float delay_s);
 
-#endif /* __ANGLE_UTILS_H__ */
+#endif /* __UTILS_H__ */

@@ -6,8 +6,8 @@ static float current_mech_angle = 0.0f; // 当前机械单圈角度[0, 2π)
 static float mech_position = 0.0f;      // 当前机械多圈位置(rad)
 static float last_mech_angle = 0.0f;    // 上一次机械单圈角度(rad)
 static uint8_t mech_position_inited = 0U;
-static float pll_phase_rad = 0.0f;      /* PLL相位估计值(单位:电角度rad) */
-static float pll_speed_rad_s = 0.0f;    /* PLL速度估计值(单位:电角速度rad/s) */
+static float pll_phase_rad = 0.0f;   /* PLL相位估计值(单位:电角度rad) */
+static float pll_speed_rad_s = 0.0f; /* PLL速度估计值(单位:电角速度rad/s) */
 
 /**
  * @brief 将机械角度计数值换算为电角度弧度值 0-2π
@@ -121,23 +121,27 @@ void encoder_update(void)
 }
 
 /**
+ * @brief 获取编码器和预测的电角度[0, 2π)：rad
+ */
+float encoder_get_encoderAngle(void)
+{
+#if (ENCODER_PLL_ANGLE_COMP_ENABLE == 1)
+    return angle_compensate_delay(current_elec_angle, pll_speed_rad_s, ENCODER_PLL_ANGLE_COMP_DELAY_S);
+#else
+    return current_elec_angle;
+#endif /* ENCODER_PLL_ANGLE_COMP_ENABLE */
+}
+
+/**
  * @brief 获取PLL估计的电角度[0, 2π)：rad
  */
 float encoder_get_pllAngle(void)
 {
 #if (ENCODER_PLL_ANGLE_COMP_ENABLE == 1)
-    return angleUtils_compensate_delay(pll_phase_rad, pll_speed_rad_s, ENCODER_PLL_ANGLE_COMP_DELAY_S);
+    return angle_compensate_delay(pll_phase_rad, pll_speed_rad_s, ENCODER_PLL_ANGLE_COMP_DELAY_S);
 #else
     return pll_phase_rad;
 #endif /* ENCODER_PLL_ANGLE_COMP_ENABLE */
-}
-
-/**
- * @brief 获取编码器和预测的电角度[0, 2π)：rad
- */
-float encoder_get_encoderAngle(void)
-{
-    return current_elec_angle;
 }
 
 /**

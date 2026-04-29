@@ -13,15 +13,6 @@
 #include "../bsp/tim.h"
 #include "../sensor/encoder.h"
 
-#include "../motor/current_closed.h"
-#include "../motor/speed_closed.h"
-#include "../motor/speed_weak_closed.h"
-#include "../motor/flux_observer_closed.h"
-#include "../motor/position_closed.h"
-
-
-
-
-
+#include "../motor/motor_control.h"
 
 #endif /* __MAIN_H__ */

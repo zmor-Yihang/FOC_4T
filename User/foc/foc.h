@@ -6,8 +6,6 @@
 #include "../alg/pid.h"
 #include "../app/user_config.h"
 
-typedef struct flux_weak flux_weak_t;
-
 // 对齐过程相关参数
 #define FOC_ALIGN_D_AXIS_VOLTAGE (0.3f)
 #define FOC_ALIGN_SETTLE_TIME_MS (500U)
@@ -21,50 +19,84 @@ typedef struct flux_weak flux_weak_t;
 // 电流环执行周期
 #define FOC_CURRENT_LOOP_DT_S (1.0f / FOC_CURRENT_LOOP_FREQ_HZ)
 
+// 运行模式枚举
+typedef enum
+{
+    FOC_MODE_CURRENT,
+    FOC_MODE_SPEED,
+    FOC_MODE_POSITION
+} foc_mode_t;
+
+// FOC 输入指令
+typedef struct
+{
+    foc_mode_t mode;
+    float target_position;
+    float target_speed;
+    float target_id;
+    float target_iq;
+} foc_cmd_t;
+
+// FOC 状态反馈
+typedef struct
+{
+    float angle_el;
+    float speed_rpm;
+    dq_t i_dq;
+    float position_rad;
+} foc_feedback_t;
+
+/* FOC 内部运行状态 (用于调试) */
+typedef struct
+{
+    float v_d_cmd;    /* D轴电压请求(限幅前) */
+    float v_q_cmd;    /* Q轴电压请求(限幅前) */
+    float v_d_out;    /* D轴实际电压输出(限幅后) */
+    float v_q_out;    /* Q轴实际电压输出(限幅后) */
+    float v_d_pi;     /* D轴PI输出 */
+    float v_q_pi;     /* Q轴PI输出 */
+    float v_d_ff;     /* D轴前馈输出 */
+    float v_q_ff;     /* Q轴前馈输出 */
+    abc_t duty_cycle; /* 输出占空比 */
+} foc_state_t;
+
+/* FOC 控制器集合 */
+typedef struct
+{
+    pid_controller_t id;       /* d轴电流环 PID */
+    pid_controller_t iq;       /* q轴电流环 PID */
+    pid_controller_t speed;    /* 速度环 PID */
+    pid_controller_t position; /* 位置环 PID */
+} foc_controller_t;
+
 /* FOC 核心控制对象 */
 typedef struct
 {
-    float target_position;
-    float target_speed; /* 目标值 */
-    float target_id;
-    float target_iq;
-
-    float v_d_cmd; /* D轴电压请求(限幅前) */
-    float v_q_cmd; /* Q轴电压请求(限幅前) */
-    float v_d_out; /* D轴电压输出 */
-    float v_q_out; /* Q轴电压输出 */
-    float v_d_pi;  /* D轴PI输出 */
-    float v_q_pi;  /* Q轴PI输出 */
-    float v_d_ff;  /* D轴前馈输出 */
-    float v_q_ff;  /* Q轴前馈输出 */
-
-    pid_controller_t *pid_id; /* PID控制器 */
-    pid_controller_t *pid_iq;
-    pid_controller_t *pid_speed;
-    pid_controller_t *pid_position;
-    flux_weak_t *flux_weak;
-
-    abc_t duty_cycle; /* 输出占空比 */
-
-    float angle_offset; /* 编码器零点偏移 */
+    foc_cmd_t cmd;
+    foc_feedback_t feedback;
+    foc_state_t state;
+    foc_controller_t controller;
+#if (FLUX_WEAK_ENABLE == 1)
+    pid_controller_t flux_weak_pid;             // 弱磁 PI 控制器
+    float flux_weak_u_current_filtered;         // 弱磁电压幅值滤波值
+#endif /* FLUX_WEAK_ENABLE */
+    float angle_offset;        // 编码器零点偏移
+    uint8_t speed_loop_cnt;    // 相对于电流环的分频执行速度环
+    uint8_t position_loop_cnt; // 相对于速度环的分频执行位置环
 } foc_t;
 
 /* 初始化与校准 */
-void foc_init(foc_t *handle, pid_controller_t *pid_id, pid_controller_t *pid_iq, pid_controller_t *pid_speed);
-void zero_alignment(foc_t *handle);
+void foc_init(foc_t *handle);
+void foc_alignment_zero(foc_t *handle);
 
-/* 闭环控制 */
-void loopControl_run_currentLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm);
-void loopControl_run_speedLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_divider);
-void loopControl_run_speedWeakLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_divider);
-void loopControl_run_positionLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, float position_rad, uint8_t speed_loop_divider, uint8_t position_loop_divider);
+/* 闭环统一入口 */
+void foc_step(foc_t *handle, uint8_t speed_loop_divider, uint8_t position_loop_divider);
 
 /* 设置目标值 */
 void foc_set_id(foc_t *handle, float id);
 void foc_set_iq(foc_t *handle, float iq);
 void foc_set_speed(foc_t *handle, float speed_rpm);
 void foc_set_position(foc_t *handle, float position_rad);
-void foc_set_positionPid(foc_t *handle, pid_controller_t *pid_position);
-void foc_set_fluxWeak(foc_t *handle, flux_weak_t *flux_weak);
+void foc_set_mode(foc_t *handle, foc_mode_t mode);
 
 #endif /* __FOC_H__ */

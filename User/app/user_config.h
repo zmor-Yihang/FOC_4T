@@ -27,8 +27,8 @@
 
 // 编码器参数
 #define ENCODER_COUNT_SWAP               0         // 1：启用编码器计数翻转
-#define ENCODER_PLL_KP                   2664.0f   // 编码器速度 PLL 比例增益  200Hz带宽
-#define ENCODER_PLL_KI                   3.56e6f   // 编码器速度 PLL 积分增益
+#define ENCODER_PLL_KP                   1776.0f   // 编码器速度 PLL 比例增益  200Hz带宽
+#define ENCODER_PLL_KI                   1.58e6f   // 编码器速度 PLL 积分增益
 #define ENCODER_PLL_SPEED_LIMIT_RPM      5000.0f   // 编码器 PLL 机械转速限幅(rpm)
 #define ENCODER_PLL_ANGLE_COMP_ENABLE    1         // 1：启用拍延时补偿
 #define ENCODER_PLL_ANGLE_COMP_DELAY_S   1.5e-4f      // 输出补偿延时(s)
@@ -53,6 +53,7 @@
 #define POSITION_DEADBAND_RAD            0.01f        // 位置到位死区(rad)
 
 // 弱磁控制参数
+#define FLUX_WEAK_ENABLE             0         // 1:启用弱磁 0:关闭弱磁
 #define FLUX_WEAK_U_REF_RATIO        0.95f     // 弱磁电压参考比例
 #define FLUX_WEAK_KP                 0.15f     // 弱磁PI比例系数
 #define FLUX_WEAK_KI                 3000.0f   // 弱磁PI积分系数

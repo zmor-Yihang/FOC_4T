@@ -13,18 +13,14 @@ int main(void)
     adc_init();
     gpio_m1_enable();
 
-    // currentClosed_init(0.0f, 0.5f);
-    // speedClosed_init(1000); // 速度闭环
-    positionClosed_init(0.0f); // 位置闭环
-    // speedWeakClosed_init(1000);// 弱磁速度闭环
-    // fluxObseverClosed_init(2000);// 无感速度闭环
+    motor_ctrl_cmd_t motor_cmd = {
+        .speed_rpm = 1000.0f,
+    };
+
+    motorControl_init(MOTOR_CTRL_MODE_SPEED, &motor_cmd); // 统一闭环初始化
 
     while (1)
     {
-        // currentClosedDebug_print_info();
-        // speedClosedDebug_print_info();
-        positionClosedDebug_print_info();
-        // speedWeakClosedDebug_print_info();
-        // fluxObseverClosedDebug_print_info();
+        motorControl_debugPrint();
     }
 }
