@@ -49,31 +49,6 @@ void foc_init(foc_t *handle)
     handle->position_loop_cnt = 0;
 }
 
-void foc_set_id(foc_t *handle, float id)
-{
-    handle->cmd.target_id = id;
-}
-
-void foc_set_iq(foc_t *handle, float iq)
-{
-    handle->cmd.target_iq = iq;
-}
-
-void foc_set_speed(foc_t *handle, float speed_rpm)
-{
-    handle->cmd.target_speed = speed_rpm;
-}
-
-void foc_set_position(foc_t *handle, float position_rad)
-{
-    handle->cmd.target_position = position_rad;
-}
-
-void foc_set_mode(foc_t *handle, foc_mode_t mode)
-{
-    handle->cmd.mode = mode;
-}
-
 void foc_alignment_zero(foc_t *handle)
 {
     float sin_sum = 0.0f;
@@ -293,3 +268,27 @@ void foc_step(foc_t *handle, uint8_t speed_loop_divider, uint8_t position_loop_d
     handle->state.duty_cycle = gateDrive_set_voltage(v_alphabeta);
 }
 
+void foc_set_id(foc_t *handle, float id)
+{
+    handle->cmd.target_id = id;
+}
+
+void foc_set_iq(foc_t *handle, float iq)
+{
+    handle->cmd.target_iq = iq;
+}
+
+void foc_set_speed(foc_t *handle, float speed_rpm)
+{
+    handle->cmd.target_speed = speed_rpm;
+}
+
+void foc_set_position(foc_t *handle, float position_rad)
+{
+    handle->cmd.target_position = position_rad;
+}
+
+void foc_set_mode(foc_t *handle, foc_mode_t mode)
+{
+    handle->cmd.mode = mode;
+}
