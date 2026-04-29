@@ -12,7 +12,7 @@ typedef struct flux_weak flux_weak_t;
 #define FOC_ALIGN_D_AXIS_VOLTAGE (0.3f)
 #define FOC_ALIGN_SETTLE_TIME_MS (500U)
 #define FOC_ALIGN_SCAN_POINTS (64)
-#define FOC_ALIGN_SCAN_REPEAT (4U)
+#define FOC_ALIGN_SCAN_REPEAT (2U)
 #define FOC_ALIGN_SAMPLE_INTERVAL_MS (20U)
 
 // SVPWM 电压矢量限幅比例 (1/sqrt(3))
@@ -24,6 +24,7 @@ typedef struct flux_weak flux_weak_t;
 /* FOC 核心控制对象 */
 typedef struct
 {
+    float target_position;
     float target_speed; /* 目标值 */
     float target_id;
     float target_iq;
@@ -40,6 +41,7 @@ typedef struct
     pid_controller_t *pid_id; /* PID控制器 */
     pid_controller_t *pid_iq;
     pid_controller_t *pid_speed;
+    pid_controller_t *pid_position;
     flux_weak_t *flux_weak;
 
     abc_t duty_cycle; /* 输出占空比 */
@@ -55,12 +57,14 @@ void zero_alignment(foc_t *handle);
 void loopControl_run_currentLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm);
 void loopControl_run_speedLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_divider);
 void loopControl_run_speedWeakLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_divider);
+void loopControl_run_positionLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, float position_rad, uint8_t speed_loop_divider, uint8_t position_loop_divider);
 
 /* 设置目标值 */
 void foc_set_id(foc_t *handle, float id);
 void foc_set_iq(foc_t *handle, float iq);
 void foc_set_speed(foc_t *handle, float speed_rpm);
+void foc_set_position(foc_t *handle, float position_rad);
+void foc_set_positionPid(foc_t *handle, pid_controller_t *pid_position);
 void foc_set_fluxWeak(foc_t *handle, flux_weak_t *flux_weak);
 
 #endif /* __FOC_H__ */
-

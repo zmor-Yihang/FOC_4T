@@ -21,16 +21,17 @@
 // 控制参数
 #define FOC_CURRENT_LOOP_FREQ_HZ         10000.0f // 电流环执行频率(Hz)
 #define FOC_SPEED_LOOP_DIVIDER           10U      // 速度环相对电流环的分频系数
+#define FOC_POSITION_LOOP_DIVIDER        10U      // 位置环相对速度环的分频系数
 #define FOC_DECOUPLING_ENABLE            1        // 1:启用前馈解耦 0:关闭前馈解耦
 #define FOC_ELEC_ANGLE_TRIM_RAD          0.0f     // 电角度手动微调量(rad)，正常情况下保持为0，仅在排查固定偏差时临时微调
 
 // 编码器参数
 #define ENCODER_COUNT_SWAP               0         // 1：启用编码器计数翻转
-#define ENCODER_PLL_KP                   1776.0f   // 编码器速度 PLL 比例增益  200Hz带宽
-#define ENCODER_PLL_KI                   1.58e6f   // 编码器速度 PLL 积分增益
+#define ENCODER_PLL_KP                   2664.0f   // 编码器速度 PLL 比例增益  200Hz带宽
+#define ENCODER_PLL_KI                   3.56e6f   // 编码器速度 PLL 积分增益
 #define ENCODER_PLL_SPEED_LIMIT_RPM      5000.0f   // 编码器 PLL 机械转速限幅(rpm)
-#define ENCODER_PLL_ANGLE_COMP_ENABLE    0         // 1：启用拍延时补偿
-#define ENCODER_PLL_ANGLE_COMP_DELAY_S   0.0f      // 输出补偿延时(s)
+#define ENCODER_PLL_ANGLE_COMP_ENABLE    1         // 1：启用拍延时补偿
+#define ENCODER_PLL_ANGLE_COMP_DELAY_S   1.5e-4f      // 输出补偿延时(s)
 
 // 电流环控制参数
 #define CURRENT_PID_KP                   5.0f           // 电流环PI比例系数  带宽1000Hz
@@ -43,6 +44,13 @@
 #define SPEED_PID_KI                     2.5f         // 速度环PI积分系数
 #define SPEED_PID_OUT_MIN                -0.8f        // 速度环输出下限
 #define SPEED_PID_OUT_MAX                0.8f         // 速度环输出上限
+
+// 位置环参数：输入机械位置rad，输出机械速度rpm
+#define POSITION_PID_KP                  20.0f        // 位置环P系数，输出rpm/rad
+#define POSITION_PID_KI                  0.0f         // 位置环I系数，起步建议保持0
+#define POSITION_PID_OUT_MIN             -100.0f      // 位置环输出速度下限(rpm)
+#define POSITION_PID_OUT_MAX             100.0f       // 位置环输出速度上限(rpm)
+#define POSITION_DEADBAND_RAD            0.01f        // 位置到位死区(rad)
 
 // 弱磁控制参数
 #define FLUX_WEAK_U_REF_RATIO        0.95f     // 弱磁电压参考比例

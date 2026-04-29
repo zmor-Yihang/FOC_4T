@@ -24,6 +24,6 @@ float wrap_0_2pi(float angle_rad);
  * @param delay_s 总等效延时，单位s
  * @return 补偿后的电角度[0, 2π)
  */
-float angle_delay_compensate(float angle_rad, float speed_rad_s, float delay_s);
+float angleUtils_compensate_delay(float angle_rad, float speed_rad_s, float delay_s);
 
 #endif /* __ANGLE_UTILS_H__ */

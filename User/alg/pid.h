@@ -6,7 +6,8 @@
 typedef enum
 {
     PID_TYPE_CURRENT = 0,
-    PID_TYPE_SPEED
+    PID_TYPE_SPEED,
+    PID_TYPE_POSITION
 } pid_type_t;
 
 /* PI控制器结构体 */

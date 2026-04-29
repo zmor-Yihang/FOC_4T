@@ -2,6 +2,10 @@
 
 // 编码器速度计算相关静态数据
 static float current_elec_angle = 0.0f; // 当前电角度，由编码器获得（结合预测）
+static float current_mech_angle = 0.0f; // 当前机械单圈角度[0, 2π)
+static float mech_position = 0.0f;      // 当前机械多圈位置(rad)
+static float last_mech_angle = 0.0f;    // 上一次机械单圈角度(rad)
+static uint8_t mech_position_inited = 0U;
 static float pll_phase_rad = 0.0f;      /* PLL相位估计值(单位:电角度rad) */
 static float pll_speed_rad_s = 0.0f;    /* PLL速度估计值(单位:电角速度rad/s) */
 
@@ -21,6 +25,38 @@ static inline float encoder_covert_countToElectricalAngle(float count)
 }
 
 /**
+ * @brief 将机械角度计数值换算为机械单圈弧度值 0-2π
+ */
+static inline float encoder_covert_countToMechanicalAngle(float count)
+{
+#if (ENCODER_COUNT_SWAP == 0) // 不颠倒
+    uint16_t mech_count = count;
+#else
+    uint16_t mech_count = ENCODER_CPR - count;
+#endif /* ENCODER_COUNT_SWAP */
+
+    return mech_count * (MATH_TWO_PI / (float)ENCODER_CPR);
+}
+
+/**
+ * @brief 更新机械多圈位置
+ */
+static void encoder_update_mechanicalPosition(float mech_angle)
+{
+    if (mech_position_inited == 0U)
+    {
+        mech_position = mech_angle;
+        last_mech_angle = mech_angle;
+        mech_position_inited = 1U;
+        return;
+    }
+
+    float delta_angle = wrap_pm_pi(mech_angle - last_mech_angle);
+    mech_position += delta_angle;
+    last_mech_angle = mech_angle;
+}
+
+/**
  * @brief 获取当前电角度
  * @note 编码器未通信完成时，采用预测的电角度
  */
@@ -30,10 +66,14 @@ static void encoder_get_currentElectricalAngle(void)
 
     if (as5600_poll_rawCount(&raw_count) != 0U)
     {
+        current_mech_angle = encoder_covert_countToMechanicalAngle(raw_count);
+        encoder_update_mechanicalPosition(current_mech_angle);
         current_elec_angle = encoder_covert_countToElectricalAngle(raw_count);
     }
     else
     {
+        current_mech_angle = wrap_0_2pi((pll_phase_rad + pll_speed_rad_s * ENCODER_SPEED_SAMPLE_TIME) / MOTOR_POLE_PAIRS);
+        encoder_update_mechanicalPosition(current_mech_angle);
         current_elec_angle = pll_phase_rad + pll_speed_rad_s * ENCODER_SPEED_SAMPLE_TIME;
     }
 
@@ -86,7 +126,7 @@ void encoder_update(void)
 float encoder_get_pllAngle(void)
 {
 #if (ENCODER_PLL_ANGLE_COMP_ENABLE == 1)
-    return angle_delay_compensate(pll_phase_rad, pll_speed_rad_s, ENCODER_PLL_ANGLE_COMP_DELAY_S);
+    return angleUtils_compensate_delay(pll_phase_rad, pll_speed_rad_s, ENCODER_PLL_ANGLE_COMP_DELAY_S);
 #else
     return pll_phase_rad;
 #endif /* ENCODER_PLL_ANGLE_COMP_ENABLE */
@@ -106,4 +146,39 @@ float encoder_get_encoderAngle(void)
 float encoder_get_pllSpeed(void)
 {
     return (pll_speed_rad_s / (MATH_TWO_PI * MOTOR_POLE_PAIRS)) * 60.0f;
+}
+
+/**
+ * @brief 获取机械单圈角度[0, 2π)：rad
+ */
+float encoder_get_mechanicalAngle(void)
+{
+    return current_mech_angle;
+}
+
+/**
+ * @brief 获取机械多圈位置：rad
+ */
+float encoder_get_mechanicalPosition(void)
+{
+    return mech_position;
+}
+
+/**
+ * @brief 获取机械多圈位置：rev
+ */
+float encoder_get_mechanicalPositionRev(void)
+{
+    return mech_position / MATH_TWO_PI;
+}
+
+/**
+ * @brief 重置机械多圈位置零点
+ * @param position_rad 重置后的当前位置(rad)
+ */
+void encoder_reset_mechanicalPosition(float position_rad)
+{
+    mech_position = position_rad;
+    last_mech_angle = current_mech_angle;
+    mech_position_inited = 1U;
 }

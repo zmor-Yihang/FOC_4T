@@ -96,6 +96,62 @@ void loopControl_run_speedLoop(foc_t *handle, dq_t i_dq, float angle_el, float s
 }
 
 /**
+ * @brief 位置闭环运行
+ * @param handle                 FOC 控制句柄
+ * @param i_dq                   dq 轴电流反馈
+ * @param angle_el               电角度 (rad)
+ * @param speed_rpm              速度反馈 (RPM)
+ * @param position_rad           机械多圈位置反馈 (rad)
+ * @param speed_loop_divider     速度环相对电流环的分频系数
+ * @param position_loop_divider  位置环相对速度环的分频系数
+ */
+void loopControl_run_positionLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, float position_rad, uint8_t speed_loop_divider, uint8_t position_loop_divider)
+{
+    static uint8_t speed_loop_div = 0;
+    static uint8_t position_loop_div = 0;
+
+    if (++speed_loop_div >= speed_loop_divider)
+    {
+        // 速度环分频计数器到达，计算速度环输出
+        float speed_loop_dt = FOC_CURRENT_LOOP_DT_S * (float)speed_loop_divider;
+        speed_loop_div = 0;
+
+        // 位置环分频计数器到达，计算位置环输出
+        if (++position_loop_div >= position_loop_divider)
+        {
+            float position_error = handle->target_position - position_rad; // 位置误差
+            float position_loop_dt = speed_loop_dt * (float)position_loop_divider;
+            position_loop_div = 0;
+
+            if (fabsf(position_error) <= POSITION_DEADBAND_RAD)
+            {
+                handle->target_speed = 0.0f;
+                if (handle->pid_position != NULL)
+                {
+                    pid_reset(handle->pid_position);
+                }
+            }
+            else if (handle->pid_position != NULL)
+            {
+                handle->target_speed = pid_calculate(handle->pid_position, handle->target_position, position_rad, position_loop_dt);
+            }
+            else
+            {
+                handle->target_speed = 0.0f;
+            }
+        }
+
+        // 计算速度环输出(iq 目标值)
+        handle->target_iq = pid_calculate(handle->pid_speed, handle->target_speed, speed_rpm, speed_loop_dt);
+    }
+
+    handle->target_id = 0.0f;
+
+    /* 复用电流闭环 */
+    loopControl_run_currentLoop(handle, i_dq, angle_el, speed_rpm);
+}
+
+/**
  * @brief 带弱磁的速度闭环运行
  * @param handle    FOC 控制句柄
  * @param i_dq      dq 轴电流反馈
@@ -128,3 +184,5 @@ void loopControl_run_speedWeakLoop(foc_t *handle, dq_t i_dq, float angle_el, flo
     /* 复用电流闭环 */
     loopControl_run_currentLoop(handle, i_dq, angle_el, speed_rpm);
 }
+
+

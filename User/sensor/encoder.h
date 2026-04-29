@@ -19,5 +19,9 @@ void encoder_update(void);
 float encoder_get_encoderAngle(void);
 float encoder_get_pllAngle(void);
 float encoder_get_pllSpeed(void);
+float encoder_get_mechanicalAngle(void);
+float encoder_get_mechanicalPosition(void);
+float encoder_get_mechanicalPositionRev(void);
+void encoder_reset_mechanicalPosition(float position_rad);
 
 #endif /* __ENCODER_H__ */
