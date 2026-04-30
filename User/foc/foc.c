@@ -43,7 +43,7 @@ void foc_init(foc_t *handle)
 
     // 编码器零点偏移初始为0，需通过 foc_alignment_zero() 函数校准
     handle->angle_offset = 0.0f;
-    
+
     // 初始化分频计数器
     handle->speed_loop_cnt = 0;
     handle->position_loop_cnt = 0;
@@ -112,19 +112,19 @@ void foc_step(foc_t *handle, uint8_t speed_loop_divider, uint8_t position_loop_d
     float position_loop_dt = speed_loop_dt * (float)position_loop_divider;
 
     /* 电流环和电压输出计算过程中使用的局部变量 */
-    dq_t i_dq;                  // 当前采样得到的 d/q 轴电流反馈
-    float speed_rpm;            // 当前机械转速反馈，单位 rpm
-    float angle_el;             // 当前电角度，供逆 Park 变换使用
-    float v_d_pi;               // d 轴电流环 PI 输出电压
-    float v_q_pi;               // q 轴电流环 PI 输出电压
-    float v_d_ff;               // d 轴前馈解耦补偿电压
-    float v_q_ff;               // q 轴前馈解耦补偿电压
-    float v_d_unsat;            // d 轴限幅前电压指令
-    float v_q_unsat;            // q 轴限幅前电压指令
-    float v_limit;              // SVPWM 线性区允许的最大电压矢量幅值
-    float v_mag_sq;             // 当前 dq 电压矢量幅值平方
-    float v_limit_sq;           // 电压限幅阈值平方，用于避免不必要的开方
-    alphabeta_t v_alphabeta;    // 逆 Park 后的 alpha/beta 静止坐标系电压
+    dq_t i_dq;               // 当前采样得到的 d/q 轴电流反馈
+    float speed_rpm;         // 当前机械转速反馈，单位 rpm
+    float angle_el;          // 当前电角度，供逆 Park 变换使用
+    float v_d_pi;            // d 轴电流环 PI 输出电压
+    float v_q_pi;            // q 轴电流环 PI 输出电压
+    float v_d_ff;            // d 轴前馈解耦补偿电压
+    float v_q_ff;            // q 轴前馈解耦补偿电压
+    float v_d_unsat;         // d 轴限幅前电压指令
+    float v_q_unsat;         // q 轴限幅前电压指令
+    float v_limit;           // SVPWM 线性区允许的最大电压矢量幅值
+    float v_mag_sq;          // 当前 dq 电压矢量幅值平方
+    float v_limit_sq;        // 电压限幅阈值平方，用于避免不必要的开方
+    alphabeta_t v_alphabeta; // 逆 Park 后的 alpha/beta 静止坐标系电压
 
     /* 先根据当前控制模式调度外环，最终得到电流环目标 target_id/target_iq */
     switch (handle->cmd.mode)
@@ -172,15 +172,6 @@ void foc_step(foc_t *handle, uint8_t speed_loop_divider, uint8_t position_loop_d
         float flux_weak_alpha = FLUX_WEAK_VOLTAGE_FILTER_CONST;
         float flux_weak_u_ref = (U_DC * FOC_VOLTAGE_LIMIT_SVPWM_SCALE) * FLUX_WEAK_U_REF_RATIO;
 
-        if (flux_weak_alpha < 0.0f)
-        {
-            flux_weak_alpha = 0.0f;
-        }
-        else if (flux_weak_alpha > 1.0f)
-        {
-            flux_weak_alpha = 1.0f;
-        }
-
         handle->flux_weak_u_current_filtered = handle->flux_weak_u_current_filtered * (1.0f - flux_weak_alpha) + flux_weak_u_mag * flux_weak_alpha;
         handle->cmd.target_id = pid_calculate(&handle->flux_weak_pid, flux_weak_u_ref, handle->flux_weak_u_current_filtered, FOC_CURRENT_LOOP_DT_S);
 #else
@@ -190,7 +181,7 @@ void foc_step(foc_t *handle, uint8_t speed_loop_divider, uint8_t position_loop_d
 
     case FOC_MODE_CURRENT:
     default:
-        /* 电流模式下 target_id/target_iq 由外部设置，这里不修改电流目标 */
+        // 电流环写在外面，所有模式公用
         break;
     }
 
@@ -204,13 +195,13 @@ void foc_step(foc_t *handle, uint8_t speed_loop_divider, uint8_t position_loop_d
     v_q_pi = pid_calculate(&handle->controller.iq, handle->cmd.target_iq, i_dq.q, FOC_CURRENT_LOOP_DT_S);
 
 #if (FOC_DECOUPLING_ENABLE == 1)
-    /* 前馈解耦：根据电角速度补偿交叉耦合项，减小高速时 d/q 轴互相影响 */
-    float omega_e = speed_rpm * (MATH_TWO_PI / 60.0f) * MOTOR_POLE_PAIRS; /* 电角速度 rad/s */
+    // 前馈解耦：根据电角速度补偿交叉耦合项
+    float omega_e = speed_rpm * (MATH_TWO_PI / 60.0f) * MOTOR_POLE_PAIRS;
 
     v_d_ff = -omega_e * MOTOR_LQ_H * i_dq.q;
     v_q_ff = omega_e * (MOTOR_LD_H * i_dq.d + MOTOR_PSI_F);
 #else
-    /* 关闭前馈解耦时，仅使用 PI 输出作为电压指令 */
+    // 关闭前馈解耦，直接置零
     v_d_ff = 0.0f;
     v_q_ff = 0.0f;
 #endif /* FOC_DECOUPLING_ENABLE */
