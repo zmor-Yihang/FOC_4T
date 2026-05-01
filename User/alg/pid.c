@@ -1,13 +1,17 @@
 #include "pid.h"
 
-void pid_init(pid_controller_t *pid, pid_type_t type, float kp, float ki, float out_min, float out_max)
+void pid_init(pid_controller_t *pid, pid_role_t role, pid_mode_t mode, float kp, float ki, float kd, float out_min, float out_max)
 {
-    pid->type = type;
+    pid->role = role;
+    pid->mode = mode;
     pid->kp = kp;
     pid->ki = ki;
+    pid->kd = kd;
 
     pid->error = 0.0f;
+    pid->prev_error = 0.0f;
     pid->integral = 0.0f;
+    pid->derivative = 0.0f;
     pid->out = 0.0f;
     pid->out_min = out_min;
     pid->out_max = out_max;
@@ -25,48 +29,61 @@ float pid_calculate(pid_controller_t *pid, float setpoint, float feedback, float
     pid->error = setpoint - feedback; // 误差
 
     float p_term = pid->kp * pid->error; // 比例项
+    float i_term = 0.0f;
+    float d_term = 0.0f;
 
     if (dt < 0.0f)
         dt = 0.0f;
 
-    // back-calc 自动调节
-    float integral_increment = (pid->kp * pid->ki * pid->error - pid->kt * pid->backcalc_error) * dt; // 该周期的积分项 + back-calc 修正
+    if ((pid->mode == PID_MODE_PI) || (pid->mode == PID_MODE_PID))
+    {
+        // back-calc 自动调节
+        float integral_increment = (pid->kp * pid->ki * pid->error - pid->kt * pid->backcalc_error) * dt; // 该周期的积分项 + back-calc 修正
 
-    pid->integral += integral_increment; // 积分项累加
+        pid->integral += integral_increment; // 积分项累加
 
-    // 积分限幅，同时要足够大以允许 back-calc 收敛
-    if (pid->integral > pid->integral_max)
-        pid->integral = pid->integral_max;
-    else if (pid->integral < -pid->integral_max)
-        pid->integral = -pid->integral_max;
+        // 积分限幅，同时要足够大以允许 back-calc 收敛
+        pid->integral = utils_clampf(pid->integral, -pid->integral_max, pid->integral_max);
 
-    float out_unclamped = p_term + pid->integral; // 未限幅的PI输出
+        i_term = pid->integral;
+    }
 
-    // 如果是电流环PI，直接输出未限幅的值，由外部负责限幅，因为电流环输出是电压，需要做矢量限幅
-    if (pid->type == PID_TYPE_CURRENT)
+    if ((pid->mode == PID_MODE_PID) && (dt > 0.0f))
+    {
+        pid->derivative = (pid->error - pid->prev_error) / dt;
+        d_term = pid->kd * pid->derivative;
+    }
+    else
+    {
+        pid->derivative = 0.0f;
+    }
+
+    float out_unclamped = p_term + i_term + d_term; // 未限幅的控制器输出
+
+    // 电流环输出电压矢量，联合限幅在外部 dq 电压矢量层完成
+    if (pid->role == PID_ROLE_CURRENT)
     {
         pid->out = out_unclamped;
+        pid->prev_error = pid->error;
         return pid->out;
     }
 
-    // 速度环输出限幅
-    if (out_unclamped > pid->out_max)
-        pid->out = pid->out_max;
-    else if (out_unclamped < pid->out_min)
-        pid->out = pid->out_min;
-    else
-        pid->out = out_unclamped;
+    // 非电流环在控制器内部做标量限幅
+    pid->out = utils_clampf(out_unclamped, pid->out_min, pid->out_max);
 
     pid->backcalc_error = out_unclamped - pid->out; // 饱和误差，用于下一周期的 back-calc 修正
+    pid->prev_error = pid->error;
 
     return pid->out;
 }
 
-// PI复位
+// 控制器复位
 void pid_reset(pid_controller_t *pid)
 {
     pid->error = 0.0f;
+    pid->prev_error = 0.0f;
     pid->integral = 0.0f;
+    pid->derivative = 0.0f;
     pid->out = 0.0f;
     pid->backcalc_error = 0.0f;
 }

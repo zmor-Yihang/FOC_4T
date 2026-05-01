@@ -76,10 +76,12 @@ typedef struct
     foc_feedback_t feedback;
     foc_state_t state;
     foc_controller_t controller;
+
 #if (FLUX_WEAK_ENABLE == 1)
-    pid_controller_t flux_weak_pid;             // 弱磁 PI 控制器
-    float flux_weak_u_current_filtered;         // 弱磁电压幅值滤波值
-#endif /* FLUX_WEAK_ENABLE */
+    pid_controller_t flux_weak_pid;     // 弱磁 PI 控制器
+    float flux_weak_u_current_filtered; // 弱磁电压幅值滤波值
+#endif
+
     float angle_offset;        // 编码器零点偏移
     uint8_t speed_loop_cnt;    // 相对于电流环的分频执行速度环
     uint8_t position_loop_cnt; // 相对于速度环的分频执行位置环

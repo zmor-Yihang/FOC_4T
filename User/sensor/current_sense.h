@@ -12,8 +12,8 @@
 
 typedef adc_offset_t current_sense_offset_t;
 
-void currentSense_get_injectedValue(abc_t *currents);
-void currentSenseDebug_get_regularValue(abc_t *currents);
-void currentSenseDebug_get_offset(current_sense_offset_t *offsets);
+abc_t currentSense_get_injectedValue(void);
+abc_t currentSenseDebug_get_regularValue(void);
+current_sense_offset_t currentSense_get_offset(void);
 
 #endif /* __CURRENT_SENSE_H__ */

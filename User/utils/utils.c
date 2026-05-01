@@ -14,6 +14,21 @@ uint8_t divider_ready(uint8_t *counter, uint8_t divider)
     return 0U;
 }
 
+float utils_clampf(float value, float min_value, float max_value)
+{
+    if (value > max_value)
+    {
+        return max_value;
+    }
+
+    if (value < min_value)
+    {
+        return min_value;
+    }
+
+    return value;
+}
+
 float wrap_pm_pi(float angle_rad)
 {
     while (angle_rad > (MATH_TWO_PI * 0.5f))

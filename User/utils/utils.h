@@ -13,6 +13,15 @@
 uint8_t divider_ready(uint8_t *counter, uint8_t divider);
 
 /**
+ * @brief 标量限幅函数
+ * @param value 待限幅数值
+ * @param min_value 下限
+ * @param max_value 上限
+ * @return 限幅后的数值
+ */
+float utils_clampf(float value, float min_value, float max_value);
+
+/**
  * @brief 将角度包络到[-π, π]范围
  * @param angle_rad 待处理角度，单位rad
  * @return 包络后的最短路径角度误差

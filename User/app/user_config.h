@@ -21,7 +21,7 @@
 // 控制参数
 #define FOC_CURRENT_LOOP_FREQ_HZ         10000.0f // 电流环执行频率(Hz)
 #define FOC_SPEED_LOOP_DIVIDER           10U      // 速度环相对电流环的分频系数
-#define FOC_POSITION_LOOP_DIVIDER        10U      // 位置环相对速度环的分频系数
+#define FOC_POSITION_LOOP_DIVIDER        10U      // 位置环相对电流环的分频系数
 #define FOC_DECOUPLING_ENABLE            1        // 1:启用前馈解耦 0:关闭前馈解耦
 #define FOC_ELEC_ANGLE_TRIM_RAD          0.0f     // 电角度手动微调量(rad)，正常情况下保持为0，仅在排查固定偏差时临时微调
 
@@ -34,29 +34,37 @@
 #define ENCODER_PLL_ANGLE_COMP_DELAY_S   1.5e-4f      // 输出补偿延时(s)
 
 // 电流环控制参数
+#define CURRENT_PID_MODE                 PID_MODE_PI     // 电流环控制律：P / PI / PID
 #define CURRENT_PID_KP                   5.0f           // 电流环PI比例系数  带宽1000Hz
 #define CURRENT_PID_KI                   2670.0f        // 电流环PI积分系数
+#define CURRENT_PID_KD                   0.0f           // 电流环PID微分系数
 #define CURRENT_PID_OUT_MIN              (-U_DC / 2.0f) // 电流环输出下限
 #define CURRENT_PID_OUT_MAX              (U_DC / 2.0f)  // 电流环输出上限
 
 // 速度环参数
+#define SPEED_PID_MODE                   PID_MODE_PI     // 速度环控制律：P / PI / PID
 #define SPEED_PID_KP                     0.004f       // 速度环PI比例系数  // 按 δ = 16 整定的，带宽1000 / 16 = 62.5Hz
 #define SPEED_PID_KI                     2.5f         // 速度环PI积分系数
+#define SPEED_PID_KD                     0.0f         // 速度环PID微分系数
 #define SPEED_PID_OUT_MIN                -0.8f        // 速度环输出下限
 #define SPEED_PID_OUT_MAX                0.8f         // 速度环输出上限
 
-// 位置环参数：输入机械位置rad，输出机械速度rpm
-#define POSITION_PID_KP                  20.0f        // 位置环P系数，输出rpm/rad
-#define POSITION_PID_KI                  0.0f         // 位置环I系数，起步建议保持0
-#define POSITION_PID_OUT_MIN             -100.0f      // 位置环输出速度下限(rpm)
-#define POSITION_PID_OUT_MAX             100.0f       // 位置环输出速度上限(rpm)
+// 位置环参数：输入机械位置rad，直接输出 q 轴电流A
+#define POSITION_PID_MODE                PID_MODE_P      // 位置环控制律：P / PI / PID
+#define POSITION_PID_KP                  0.8f         // 位置环P系数，输出A/rad
+#define POSITION_PID_KI                  0.0f         // 若按PD思路使用可先保持0，D项建议用速度前馈/反馈单独实现
+#define POSITION_PID_KD                  0.0f         // 位置环PID微分系数
+#define POSITION_PID_OUT_MIN             -0.8f        // 位置环输出电流下限(A)
+#define POSITION_PID_OUT_MAX             0.8f         // 位置环输出电流上限(A)
 #define POSITION_DEADBAND_RAD            0.01f        // 位置到位死区(rad)
 
 // 弱磁控制参数
 #define FLUX_WEAK_ENABLE             0         // 1:启用弱磁 0:关闭弱磁
 #define FLUX_WEAK_U_REF_RATIO        0.95f     // 弱磁电压参考比例
+#define FLUX_WEAK_PID_MODE           PID_MODE_PI // 弱磁控制律：P / PI / PID
 #define FLUX_WEAK_KP                 0.15f     // 弱磁PI比例系数
 #define FLUX_WEAK_KI                 3000.0f   // 弱磁PI积分系数
+#define FLUX_WEAK_KD                 0.0f       // 弱磁PID微分系数
 #define FLUX_WEAK_ID_MIN             -0.8f     // 弱磁d轴最小电流(A)
 #define FLUX_WEAK_VOLTAGE_FILTER_CONST 0.05f   // 弱磁电压反馈一阶滤波系数(alpha)
 

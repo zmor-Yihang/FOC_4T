@@ -13,8 +13,8 @@ void adc_test_poll(void)
     current_sense_offset_t current_offset;
     float debug_data[5];
 
-    currentSenseDebug_get_regularValue(&phase_current);
-    currentSenseDebug_get_offset(&current_offset);
+    phase_current = currentSenseDebug_get_regularValue();
+    current_offset = currentSense_get_offset();
 
     debug_data[0] = phase_current.a;
     debug_data[1] = phase_current.b;

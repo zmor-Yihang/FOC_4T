@@ -30,12 +30,12 @@ typedef struct
 typedef void (*adc_injectedCallback_p)(void);
 
 void adc_init(void);
-void adc_get_injectedRaw(adc_rawValues_t *values);
+adc_rawValues_t adc_get_injectedRaw(void);
 void adc_register_injectedCallback(adc_injectedCallback_p callback);
 
 // 调试接口（统一使用 adc_dbg_ 前缀）
-void adcDebug_get_regularRaw(adc_rawValues_t *values); // 规则组阻塞式采样，仅调试用
-void adcDebug_get_offset(adc_offset_t *offsets);        // 获取ADC零点偏移
+adc_rawValues_t adcDebug_get_regularRaw(void); // 规则组阻塞式采样，仅调试用
+adc_offset_t adcDebug_get_offset(void);        // 获取ADC零点偏移
 uint32_t adcDebug_get_injectedIrqCount(void);           // 注入组中断触发计数器
 uint32_t adcDebug_get_injectedCallbackCount(void);      // 注入组用户ADC回调执行计数器，触发中断不一定执行回调
 

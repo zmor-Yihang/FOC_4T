@@ -170,32 +170,39 @@ void adc_init(void)
 /**
  * @brief  获取标定得到的零点偏移量
  */
-void adcDebug_get_offset(adc_offset_t *offsets)
+adc_offset_t adcDebug_get_offset(void)
 {
-    offsets->ia_offset = adc_offset.ia_offset; // 输出A相零点偏移
-    offsets->ib_offset = adc_offset.ib_offset; // 输出B相零点偏移
+    return adc_offset;
 }
 
 
 /**
  * @brief  获取最近一次注入组采样的原始值 (非阻塞)
  */
-void adc_get_injectedRaw(adc_rawValues_t *values)
+adc_rawValues_t adc_get_injectedRaw(void)
 {
-    values->ia_raw = adc_injected_buf[0];
-    values->ib_raw = adc_injected_buf[1];
+    adc_rawValues_t values;
+
+    values.ia_raw = adc_injected_buf[0];
+    values.ib_raw = adc_injected_buf[1];
+
+    return values;
 }
 
 /**
  * @brief  规则组采样获取当前原始值 (阻塞式, 调试用)
  */
-void adcDebug_get_regularRaw(adc_rawValues_t *values)
+adc_rawValues_t adcDebug_get_regularRaw(void)
 {
+    adc_rawValues_t values;
+
     HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_regular_buf, 2); // 启动规则组DMA采样
     HAL_Delay(10);                                             // 等待10ms让ADC完成多次转换
-    values->ia_raw = adc_regular_buf[0];
-    values->ib_raw = adc_regular_buf[1];
+    values.ia_raw = adc_regular_buf[0];
+    values.ib_raw = adc_regular_buf[1];
     HAL_ADC_Stop_DMA(&hadc1); // 停止DMA
+
+    return values;
 }
 
 uint32_t adcDebug_get_injectedIrqCount(void)

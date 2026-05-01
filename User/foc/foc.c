@@ -37,7 +37,7 @@ void foc_init(foc_t *handle)
 
 #if (FLUX_WEAK_ENABLE == 1)
     // 弱磁内部状态初始化
-    pid_init(&handle->flux_weak_pid, PID_TYPE_SPEED, FLUX_WEAK_KP, FLUX_WEAK_KI, FLUX_WEAK_ID_MIN, 0.0f);
+    pid_init(&handle->flux_weak_pid, PID_ROLE_SPEED, FLUX_WEAK_PID_MODE, FLUX_WEAK_KP, FLUX_WEAK_KI, FLUX_WEAK_KD, FLUX_WEAK_ID_MIN, 0.0f);
     handle->flux_weak_u_current_filtered = 0.0f;
 #endif /* FLUX_WEAK_ENABLE */
 
@@ -129,31 +129,30 @@ void foc_step(foc_t *handle, uint8_t speed_loop_divider, uint8_t position_loop_d
     /* 先根据当前控制模式调度外环，最终得到电流环目标 target_id/target_iq */
     switch (handle->cmd.mode)
     {
-    case FOC_MODE_POSITION: // 位置环：位置误差 -> 目标速度
+    case FOC_MODE_POSITION: // 位置环：位置误差 -> 目标 q 轴电流
         if (divider_ready(&handle->position_loop_cnt, position_loop_divider))
         {
             float position_error;
 
             position_error = handle->cmd.target_position - handle->feedback.position_rad;
 
-            /* 进入位置死区后停止速度给定，并清空位置环积分，避免静止时积分残留 */
+            /* 进入位置死区后直接清零力矩电流，并清空位置环积分，避免静止时残留输出 */
             if (fabsf(position_error) <= POSITION_DEADBAND_RAD)
             {
                 handle->cmd.target_speed = 0.0f;
+                handle->cmd.target_iq = 0.0f;
                 pid_reset(&handle->controller.position);
+                pid_reset(&handle->controller.speed);
             }
             else
             {
-                /* 位置环输出作为速度环目标 */
-                handle->cmd.target_speed = pid_calculate(&handle->controller.position, handle->cmd.target_position, handle->feedback.position_rad, position_loop_dt);
+                /* 仿照 VESC 的位置闭环思路：位置环直接输出力矩电流请求，跳过速度环级联 */
+                handle->cmd.target_iq = pid_calculate(&handle->controller.position, handle->cmd.target_position, handle->feedback.position_rad, position_loop_dt);
             }
         }
 
-        /* 速度环低频执行：目标速度 -> q 轴目标电流 */
-        if (divider_ready(&handle->speed_loop_cnt, speed_loop_divider))
-        {
-            handle->cmd.target_iq = pid_calculate(&handle->controller.speed, handle->cmd.target_speed, handle->feedback.speed_rpm, speed_loop_dt);
-        }
+        /* 位置直驱电流模式下不使用速度环，target_speed 仅保留给调试观察。 */
+        handle->cmd.target_speed = 0.0f;
 
         /* 位置模式不参与弱磁，避免位置控制到位/低速时引入额外 d 轴电流。 */
         handle->cmd.target_id = 0.0f;
@@ -251,12 +250,4 @@ void foc_step(foc_t *handle, uint8_t speed_loop_divider, uint8_t position_loop_d
 
     /* 输出层完成 SVPWM 调制和 PWM 占空比下发，并返回实际占空比用于调试观察 */
     handle->state.duty_cycle = gateDrive_set_voltage(v_alphabeta);
-}
-
-void foc_set_cmd(foc_t *handle, const foc_cmd_t *cmd)
-{
-    if (handle != NULL && cmd != NULL)
-    {
-        handle->cmd = *cmd;
-    }
 }

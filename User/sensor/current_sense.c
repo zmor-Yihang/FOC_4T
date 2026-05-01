@@ -36,35 +36,45 @@ static void currentSense_convert_rawToCurrent(const adc_rawValues_t *raw, const 
  * @brief  控制接口：读取注入通道 ADC 并输出三相电流
  * @param  currents 输出三相电流（单位：A）
  */
-void currentSense_get_injectedValue(abc_t *currents)
+abc_t currentSense_get_injectedValue(void)
 {
     adc_rawValues_t raw;
     current_sense_offset_t offsets;
+    abc_t currents;
 
-    adc_get_injectedRaw(&raw);     // 读取注入组采样值（通常与 PWM 同步）
-    adcDebug_get_offset(&offsets); // 读取当前零偏
-    currentSense_convert_rawToCurrent(&raw, &offsets, currents);
+    raw = adc_get_injectedRaw();   // 读取注入组采样值（通常与 PWM 同步）
+    offsets = currentSense_get_offset(); // 读取当前零偏
+    currentSense_convert_rawToCurrent(&raw, &offsets, &currents);
+
+    return currents;
 }
 
 /*
  * @brief  调试接口：读取常规通道 ADC 并输出三相电流
  * @param  currents 输出三相电流（单位：A）
  */
-void currentSenseDebug_get_regularValue(abc_t *currents)
+abc_t currentSenseDebug_get_regularValue(void)
 {
     adc_rawValues_t raw;
     current_sense_offset_t offsets;
+    abc_t currents;
 
-    adcDebug_get_regularRaw(&raw); // 读取常规组采样值
-    adcDebug_get_offset(&offsets); // 读取当前零偏
-    currentSense_convert_rawToCurrent(&raw, &offsets, currents);
+    raw = adcDebug_get_regularRaw(); // 读取常规组采样值
+    offsets = currentSense_get_offset(); // 读取当前零偏
+    currentSense_convert_rawToCurrent(&raw, &offsets, &currents);
+
+    return currents;
 }
 
 /*
  * @brief  调试接口：导出当前电流采样零偏
  * @param  offsets 输出零偏结构体
  */
-void currentSenseDebug_get_offset(current_sense_offset_t *offsets)
+current_sense_offset_t currentSense_get_offset(void)
 {
-    adcDebug_get_offset(offsets);
+    current_sense_offset_t offsets;
+
+    offsets = adcDebug_get_offset();
+
+    return offsets;
 }
