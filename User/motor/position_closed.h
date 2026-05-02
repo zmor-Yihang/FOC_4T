@@ -8,9 +8,6 @@
 #include "../app/user_config.h"
 
 void positionClosed_init(float position_rad);
-void positionClosed_setTarget(float position_rad);
-void positionClosed_setTargetRev(float position_rev);
-void positionClosed_resetPosition(float position_rad);
 void positionClosedDebug_print_info(void);
 
 #endif /* __POSITION_CLOSED_H__ */

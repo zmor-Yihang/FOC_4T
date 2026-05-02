@@ -59,3 +59,8 @@ void foc_set_fluxWeak(foc_t *handle, flux_weak_t *flux_weak)
     handle->flux_weak = flux_weak;
 }
 
+float foc_get_angleOffset(const foc_t *handle)
+{
+    return handle->angle_offset;
+}
+

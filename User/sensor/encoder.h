@@ -4,6 +4,7 @@
 #include "stm32g4xx_hal.h"
 #include "../app/user_config.h"
 #include "../utils/angle_utils.h"
+#include "../utils/math_utils.h"
 #include "../bsp/as5600.h"
 
 // 编码器本体参数

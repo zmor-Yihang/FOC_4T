@@ -107,25 +107,6 @@ void positionClosed_init(float position_rad)
     adc_register_injectedCallback(position_closed_callback);
 }
 
-void positionClosed_setTarget(float position_rad)
-{
-    foc_set_position(&foc_position_closed_handle, position_rad);
-}
-
-void positionClosed_setTargetRev(float position_rev)
-{
-    foc_set_position(&foc_position_closed_handle, position_rev * MATH_TWO_PI);
-}
-
-void positionClosed_resetPosition(float position_rad)
-{
-    encoder_reset_mechanicalPosition(position_rad);
-    pid_reset(&pid_position);
-    pid_reset(&pid_speed);
-    foc_position_closed_handle.target_speed = 0.0f;
-    foc_position_closed_handle.target_iq = 0.0f;
-}
-
 void positionClosedDebug_print_info(void)
 {
     // 归一化角度到 [0, 2π) 范围
