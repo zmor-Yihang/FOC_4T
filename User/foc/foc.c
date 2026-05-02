@@ -1,8 +1,4 @@
-#include <math.h>
-
 #include "foc.h"
-#include "gate_drive.h"
-#include "../sensor/encoder.h"
 
 void foc_init(foc_t *handle)
 {
@@ -241,4 +237,31 @@ void foc_step(foc_t *handle, uint8_t speed_loop_divider, uint8_t position_loop_d
 
     /* 输出层完成 SVPWM 调制和 PWM 占空比下发，并返回实际占空比用于调试观察 */
     handle->state.duty_cycle = gateDrive_set_voltage(v_alphabeta);
+}
+
+void foc_set_mode(foc_t *handle, foc_mode_t mode)
+{
+    handle->cmd.mode = mode;
+}
+
+void foc_set_currentTarget(foc_t *handle, float target_id, float target_iq)
+{
+    handle->cmd.target_id = target_id;
+    handle->cmd.target_iq = target_iq;
+}
+
+void foc_set_speedTarget(foc_t *handle, float target_speed)
+{
+    handle->cmd.target_speed = target_speed;
+}
+
+void foc_set_positionTarget(foc_t *handle, float target_position)
+{
+    handle->cmd.target_position = target_position;
+}
+
+void foc_reset_motionTarget(foc_t *handle)
+{
+    handle->cmd.target_speed = 0.0f;
+    handle->cmd.target_iq = 0.0f;
 }

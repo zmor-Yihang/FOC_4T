@@ -5,6 +5,8 @@
 #include "../alg/clark_park.h"
 #include "../alg/pid.h"
 #include "../app/user_config.h"
+#include "gate_drive.h"
+#include "../sensor/encoder.h"
 
 // 对齐过程相关参数
 #define FOC_ALIGN_D_AXIS_VOLTAGE (0.3f)
@@ -94,7 +96,11 @@ void foc_alignment_zero(foc_t *handle);
 /* 闭环统一入口 */
 void foc_step(foc_t *handle, uint8_t speed_loop_divider, uint8_t position_loop_divider);
 
-/* 设置目标值 */
-void foc_set_cmd(foc_t *handle, const foc_cmd_t *cmd);
+/* 命令设置接口 */
+void foc_set_mode(foc_t *handle, foc_mode_t mode);
+void foc_set_currentTarget(foc_t *handle, float target_id, float target_iq);
+void foc_set_speedTarget(foc_t *handle, float target_speed);
+void foc_set_positionTarget(foc_t *handle, float target_position);
+void foc_reset_motionTarget(foc_t *handle);
 
 #endif /* __FOC_H__ */

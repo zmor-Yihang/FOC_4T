@@ -13,11 +13,8 @@ int main(void)
     adc_init();
     gpio_m1_enable();
 
-    foc_cmd_t motor_cmd = {
-        .target_speed = 1000.0f,
-    };
-
-    motorControl_init(FOC_MODE_SPEED, &motor_cmd); // 统一闭环初始化
+    motorControl_init(FOC_MODE_SPEED); // 统一闭环初始化
+    motorControl_setSpeed(1000.0f);
 
     while (1)
     {

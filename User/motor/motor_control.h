@@ -10,12 +10,12 @@
 #include "../utils/utils.h"
 #include "../utils/print.h"
 
-void motorControl_init(foc_mode_t mode, const foc_cmd_t *cmd);
+void motorControl_init(foc_mode_t mode);
 void motorControl_debugPrint(void);
-void motorControl_setPosition(float position_rad);
+void motorControl_setMode(foc_mode_t mode);
+void motorControl_setSpeed(float rpm);
+void motorControl_setCurrent(float target_id, float target_iq);
 void motorControl_setPositionRev(float position_rev);
 void motorControl_resetPosition(float position_rad);
-foc_t *motorControl_getFocHandle(void);
-foc_mode_t motorControl_getMode(void);
 
 #endif /* __MOTOR_CONTROL_H__ */
