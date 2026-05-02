@@ -57,7 +57,7 @@ void zero_alignment(foc_t *handle);
 void loopControl_run_currentLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm);
 void loopControl_run_speedLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_divider);
 void loopControl_run_speedWeakLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, uint8_t speed_loop_divider);
-void loopControl_run_positionLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, float position_rad, uint8_t speed_loop_divider, uint8_t position_loop_divider);
+void loopControl_run_positionLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, float position_rad, uint8_t position_loop_divider);
 
 /* 设置目标值 */
 void foc_set_id(foc_t *handle, float id);

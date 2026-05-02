@@ -64,8 +64,8 @@ static void position_closed_callback(void)
     angle_el_temp = angle_meas;
     pll_angle_el_temp = angle_el;
 
-    // 位置闭环：位置环输出速度目标，速度环输出iq目标，电流环输出电压
-    loopControl_run_positionLoop(&foc_position_closed_handle, i_dq, angle_el, speed_feedback, position_feedback, FOC_SPEED_LOOP_DIVIDER, FOC_POSITION_LOOP_DIVIDER);
+    // 位置闭环：位置PD直接输出iq目标，电流环输出电压
+    loopControl_run_positionLoop(&foc_position_closed_handle, i_dq, angle_el, speed_feedback, position_feedback, FOC_POSITION_LOOP_DIVIDER);
 
     target_speed_temp = foc_position_closed_handle.target_speed;
     target_iq_temp = foc_position_closed_handle.target_iq;
@@ -81,11 +81,11 @@ static void position_closed_callback(void)
 
 void positionClosed_init(float position_rad)
 {
-    // 初始化电流环、速度环和位置环 PID 控制器
+    // 初始化电流环和位置环 PID 控制器，位置环使用PD模式并直接输出iq目标
     pid_init(&pid_id, PID_TYPE_CURRENT, CURRENT_PID_KP, CURRENT_PID_KI, CURRENT_PID_OUT_MIN, CURRENT_PID_OUT_MAX);
     pid_init(&pid_iq, PID_TYPE_CURRENT, CURRENT_PID_KP, CURRENT_PID_KI, CURRENT_PID_OUT_MIN, CURRENT_PID_OUT_MAX);
     pid_init(&pid_speed, PID_TYPE_SPEED, SPEED_PID_KP, SPEED_PID_KI, SPEED_PID_OUT_MIN, SPEED_PID_OUT_MAX);
-    pid_init(&pid_position, PID_TYPE_POSITION, POSITION_PID_KP, POSITION_PID_KI, POSITION_PID_OUT_MIN, POSITION_PID_OUT_MAX);
+    pid_init_mode(&pid_position, PID_TYPE_POSITION, PID_MODE_PID, POSITION_PID_KP, POSITION_PID_KI, POSITION_PID_KD, POSITION_PID_OUT_MIN, POSITION_PID_OUT_MAX);
 
     // 初始化 FOC 控制句柄
     foc_init(&foc_position_closed_handle, &pid_id, &pid_iq, &pid_speed);
