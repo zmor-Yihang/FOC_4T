@@ -86,7 +86,7 @@ float pid_calculate(pid_controller_t *pid, float setpoint, float feedback, float
         pid->i_term = pid->integral;
     }
 
-    if ((pid->mode == PID_MODE_PID) && (dt > 0.0f))
+    if (((pid->mode == PID_MODE_PD) || (pid->mode == PID_MODE_PID)) && (dt > 0.0f))
     {
         pid->derivative = (pid->error - pid->prev_error) / dt;
         pid->d_term = pid->kd * pid->derivative;

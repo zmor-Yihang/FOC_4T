@@ -2,8 +2,8 @@
 
 // 编码器速度计算相关静态数据
 static float current_elec_angle = 0.0f; // 当前电角度，由编码器获得（结合预测）
-static float current_mech_angle = 0.0f; // 当前机械单圈角度[0, 2π)
-static float mech_position = 0.0f;      // 当前机械多圈位置(rad)
+static float current_mech_angle = 0.0f; // 当前机械单圈角度，用于单圈位置反馈
+static float mech_position = 0.0f;      // 当前机械多圈位置，用于多圈位置反馈
 static float last_mech_angle = 0.0f;    // 上一次机械单圈角度(rad)
 static uint8_t mech_position_inited = 0U;
 static float pll_phase_rad = 0.0f;   /* PLL相位估计值(单位:电角度rad) */
@@ -28,6 +28,7 @@ static inline float encoder_convert_countToMechanicalAngle(float count)
  */
 static void encoder_update_mechanicalPosition(float mech_angle)
 {
+    // 机械位置未初始化时直接赋值，之后通过增量更新避免累积误差
     if (mech_position_inited == 0U)
     {
         mech_position = mech_angle;
@@ -145,20 +146,12 @@ float encoder_get_mechanicalPosition(void)
 }
 
 /**
- * @brief 获取机械多圈位置：rev
- */
-float encoder_get_mechanicalPositionRev(void)
-{
-    return mech_position / MATH_TWO_PI;
-}
-
-/**
  * @brief 重置机械多圈位置零点
  * @param position_rad 重置后的当前位置(rad)
  */
 void encoder_reset_mechanicalPosition(float position_rad)
 {
-    mech_position = position_rad;
-    last_mech_angle = current_mech_angle;
-    mech_position_inited = 1U;
+    mech_position = position_rad;         // 直接设置多圈位置，避免重置时出现大跳变
+    last_mech_angle = current_mech_angle; // 设置last_mech_angle 避免下一次更新时出现大跳变
+    mech_position_inited = 1U;            // 标记位置已初始化
 }

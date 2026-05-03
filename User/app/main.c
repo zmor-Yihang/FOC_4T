@@ -17,7 +17,7 @@ int main(void)
     // speedClosed_init(1000); // 速度闭环
     positionClosed_init(0.0f); // 位置闭环
     // speedWeakClosed_init(1000);// 弱磁速度闭环
-    // fluxObseverClosed_init(2000);// 无感速度闭环
+    // fluxObseverClosed_init(1000);// 无感速度闭环
 
     while (1)
     {

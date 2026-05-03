@@ -84,8 +84,8 @@ void loopControl_run_speedLoop(foc_t *handle, dq_t i_dq, float angle_el, float s
     /* 速度环按分频执行，其他周期保持上一次 iq 目标 */
     if (++speed_loop_div >= speed_loop_divider)
     {
-        float speed_loop_dt = FOC_CURRENT_LOOP_DT_S * (float)speed_loop_divider;
         speed_loop_div = 0;
+        float speed_loop_dt = FOC_CURRENT_LOOP_DT_S * (float)speed_loop_divider;
         handle->target_iq = pid_calculate(handle->pid_speed, handle->target_speed, speed_rpm, speed_loop_dt);
     }
 
@@ -96,7 +96,7 @@ void loopControl_run_speedLoop(foc_t *handle, dq_t i_dq, float angle_el, float s
 }
 
 /**
- * @brief 位置闭环运行，位置PD直接输出q轴目标电流，D项使用测量微分避免目标阶跃冲击
+ * @brief 位置闭环运行，位置PD直接输出q轴目标电流，D项使用PLL机械速度避免目标阶跃冲击
  * @param handle                 FOC 控制句柄
  * @param i_dq                   dq 轴电流反馈
  * @param angle_el               电角度 (rad)
@@ -106,103 +106,50 @@ void loopControl_run_speedLoop(foc_t *handle, dq_t i_dq, float angle_el, float s
  */
 void loopControl_run_positionLoop(foc_t *handle, dq_t i_dq, float angle_el, float speed_rpm, float position_rad, uint8_t position_loop_divider)
 {
-    static uint16_t position_loop_div = 0;
-    static float prev_position_rad = 0.0f;
-    static uint8_t position_feedback_valid = 0U;
-    static float position_speed_filtered_rad_s = 0.0f;
-    uint16_t position_total_divider = (uint16_t)position_loop_divider;
+    static uint16_t position_loop_div = 0; // 位置环分频计数器
 
-    if (position_total_divider == 0U)
+    /* 位置环按分频执行，未到执行周期时保持上一次 target_iq */
+    if (++position_loop_div >= position_loop_divider)
     {
-        position_total_divider = 1U;
-    }
-
-    if (++position_loop_div >= position_total_divider)
-    {
+        position_loop_div = 0;                                         // 复位分频计数器
         float position_error = handle->target_position - position_rad; // 位置误差
-        float position_loop_dt = FOC_CURRENT_LOOP_DT_S * (float)position_total_divider;
-        position_loop_div = 0;
+        float position_speed_rad_s = speed_rpm * (MATH_TWO_PI / 60.0f); // PLL机械速度，单位 rad/s
+        float gain_scale = 1.0f;                                        // 接近目标位置时的增益缩放，默认不缩放
+        float kp_eff = handle->pid_position->kp;
+        float kd_eff = handle->pid_position->kd;
 
-        if (fabsf(position_error) <= POSITION_DEADBAND_RAD)
+        /* 接近目标位置时按误差比例降低 PID 增益，使收敛更柔和 */
+        if (POSITION_PID_GAIN_DEC_ERROR_RAD > 0.0f)
         {
-            handle->target_speed = 0.0f;
-            handle->target_iq = 0.0f;
-            if (handle->pid_position != NULL)
+            float position_error_abs = fabsf(position_error);
+
+            if (position_error_abs < POSITION_PID_GAIN_DEC_ERROR_RAD)
             {
-                pid_reset(handle->pid_position);
+                gain_scale = position_error_abs / POSITION_PID_GAIN_DEC_ERROR_RAD;
+                kp_eff *= gain_scale;
+                kd_eff *= gain_scale;
             }
         }
-        else if (handle->pid_position != NULL)
-        {
-            pid_controller_t *pid = handle->pid_position;
-            float position_speed_rad_s = 0.0f;
-            float gain_scale = 1.0f;
-            float kp_eff = pid->kp;
-            float ki_eff = pid->ki;
-            float kd_eff = pid->kd;
 
-            if (position_feedback_valid != 0U)
-            {
-                position_speed_rad_s = (position_rad - prev_position_rad) / position_loop_dt;
-            }
+        /* 计算 PD 项 */
+        handle->pid_position->error = position_error;
+        handle->pid_position->p_term = kp_eff * handle->pid_position->error;
+        handle->pid_position->i_term = 0.0f;
+        handle->pid_position->d_term = 0.0f;
 
-            position_speed_filtered_rad_s += POSITION_PID_D_FILTER_ALPHA * (position_speed_rad_s - position_speed_filtered_rad_s);
+        /* D 项取负的反馈速度：位置正向变化时产生反向阻尼 */
+        handle->pid_position->derivative = -position_speed_rad_s;
+        handle->pid_position->d_term = kd_eff * handle->pid_position->derivative;
 
-            if (POSITION_PID_GAIN_DEC_ERROR_RAD > 0.0f)
-            {
-                float position_error_abs = fabsf(position_error);
+        /* 位置环输出限幅为 q 轴目标电流，并保存限幅误差供下一周期抗饱和使用 */
+        float out_unclamped = handle->pid_position->p_term + handle->pid_position->i_term + handle->pid_position->d_term;
+        handle->pid_position->out = utils_clampf(out_unclamped, handle->pid_position->out_min, handle->pid_position->out_max);
 
-                if (position_error_abs < POSITION_PID_GAIN_DEC_ERROR_RAD)
-                {
-                    gain_scale = position_error_abs / POSITION_PID_GAIN_DEC_ERROR_RAD;
-                    kp_eff *= gain_scale;
-                    ki_eff *= gain_scale;
-                    kd_eff *= gain_scale;
-                }
-            }
-
-            pid->error = position_error;
-            pid->p_term = kp_eff * pid->error;
-            pid->i_term = 0.0f;
-            pid->d_term = 0.0f;
-
-            if ((pid->mode == PID_MODE_PI) || (pid->mode == PID_MODE_PID))
-            {
-                float integral_increment = (kp_eff * ki_eff * pid->error - pid->kt * pid->backcalc_error) * position_loop_dt;
-
-                pid->integral += integral_increment;
-                pid->integral = utils_clampf(pid->integral, -pid->integral_max, pid->integral_max);
-                pid->i_term = pid->integral;
-            }
-
-            if (pid->mode == PID_MODE_PID)
-            {
-                pid->derivative = -position_speed_filtered_rad_s;
-                pid->d_term = kd_eff * pid->derivative;
-            }
-            else
-            {
-                pid->derivative = 0.0f;
-            }
-
-            float out_unclamped = pid->p_term + pid->i_term + pid->d_term;
-            pid->out = utils_clampf(out_unclamped, pid->out_min, pid->out_max);
-            pid->backcalc_error = out_unclamped - pid->out;
-            pid->prev_error = pid->error;
-
-            handle->target_iq = pid->out;
-            handle->target_speed = 0.0f;
-        }
-        else
-        {
-            handle->target_speed = 0.0f;
-            handle->target_iq = 0.0f;
-        }
-
-        prev_position_rad = position_rad;
-        position_feedback_valid = 1U;
+        /* 位置环直接给电流环 q 轴电流目标 */
+        handle->target_iq = handle->pid_position->out;
     }
 
+    /* 位置控制当前只使用 q 轴转矩电流，d 轴目标保持为 0 */
     handle->target_id = 0.0f;
 
     /* 复用电流闭环 */
@@ -242,5 +189,3 @@ void loopControl_run_speedWeakLoop(foc_t *handle, dq_t i_dq, float angle_el, flo
     /* 复用电流闭环 */
     loopControl_run_currentLoop(handle, i_dq, angle_el, speed_rpm);
 }
-
-

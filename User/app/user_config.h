@@ -46,14 +46,11 @@
 
 // 位置环参数：输入机械位置rad，PD直接输出q轴目标电流A
 #define FOC_POSITION_LOOP_DIVIDER        10U          // 位置环相对电流环的分频系数
-#define POSITION_PID_KP                  0.5f         // 位置环P系数，输出A/rad
-#define POSITION_PID_KI                  0.0f         // 位置环I系数，PD控制保持0
-#define POSITION_PID_KD                  0.02f        // 位置环D系数，输出A/(rad/s)
-#define POSITION_PID_GAIN_DEC_ERROR_RAD  0.05f        // 小误差增益衰减阈值(rad)，<=0时关闭衰减
-#define POSITION_PID_D_FILTER_ALPHA      0.2f         // 位置微分项低通滤波系数(alpha)
+#define POSITION_PID_KP                  1.5f         // 位置环P系数
+#define POSITION_PID_KD                  0.05f        // 位置环D系数，D项使用PLL速度反馈，提供阻尼作用
+#define POSITION_PID_GAIN_DEC_ERROR_RAD  0.0f         // 小误差增益衰减阈值(rad)，<=0时关闭衰减
 #define POSITION_PID_OUT_MIN             -0.8f        // 位置环输出q轴电流下限(A)
 #define POSITION_PID_OUT_MAX             0.8f         // 位置环输出q轴电流上限(A)
-#define POSITION_DEADBAND_RAD            0.01f        // 位置到位死区(rad)
 
 // 弱磁控制参数
 #define FLUX_WEAK_U_REF_RATIO        0.95f     // 弱磁电压参考比例
