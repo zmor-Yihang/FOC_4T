@@ -7,13 +7,6 @@
 
 typedef enum
 {
-    PID_TYPE_CURRENT = 0,
-    PID_TYPE_SPEED,
-    PID_TYPE_POSITION
-} pid_type_t;
-
-typedef enum
-{
     PID_MODE_P = 0,
     PID_MODE_PI,
     PID_MODE_PD,
@@ -23,7 +16,6 @@ typedef enum
 /* P/PI/PD/PID控制器结构体 */
 typedef struct
 {
-    pid_type_t type;    /* PID类型 */
     pid_mode_t mode;    /* 控制律模式 */
     float kp;           /* 比例系数 */
     float ki;           /* 积分系数 */
@@ -48,11 +40,8 @@ typedef struct
     float backcalc_error;/* 上一拍饱和误差 */
 } pid_controller_t;
 
-/* PI控制器初始化，默认使用PI模式 */
-void pid_init(pid_controller_t *pid, pid_type_t type, float kp, float ki, float out_min, float out_max);
-
 /* P/PI/PD/PID控制器初始化 */
-void pid_init_mode(pid_controller_t *pid, pid_type_t type, pid_mode_t mode, float kp, float ki, float kd, float out_min, float out_max);
+void pid_init(pid_controller_t *pid, pid_mode_t mode, float kp, float ki, float kd, float out_min, float out_max, uint8_t enable_limit);
 
 /* 设置PID参数 */
 void pid_set_gains(pid_controller_t *pid, float kp, float ki, float kd);

@@ -12,7 +12,6 @@ static dq_t i_dq_temp = {
 };
 
 static float speed_temp = 0.0f;
-static float angle_el_temp = 0.0f;
 static float pll_angle_el_temp = 0.0f;
 static float adc_inj_irq_hz_temp = 0.0f;
 static float adc_inj_callback_hz_temp = 0.0f;
@@ -30,7 +29,6 @@ static void current_closed_callback(void)
 
     // 控制使用PLL估计角度；原始角度只用于调试观察
     float angle_el = wrap_0_2pi(encoder_get_pllAngle() - foc_current_closed_handle.angle_offset);
-    float angle_raw = wrap_0_2pi(encoder_get_encoderAngle() - foc_current_closed_handle.angle_offset);
 
     // 获取电流反馈值
     abc_t i_abc;
@@ -46,7 +44,6 @@ static void current_closed_callback(void)
     // 打印用
     i_dq_temp = i_dq;
     speed_temp = speed_feedback;
-    angle_el_temp = angle_raw;
     pll_angle_el_temp = angle_el;
 
     // 电流闭环
@@ -64,8 +61,8 @@ static void current_closed_callback(void)
 void currentClosed_init(float id, float iq)
 {
     // 初始化电流环 PID 控制器
-    pid_init(&pid_id, PID_TYPE_CURRENT, CURRENT_PID_KP, CURRENT_PID_KI, CURRENT_PID_OUT_MIN, CURRENT_PID_OUT_MAX);
-    pid_init(&pid_iq, PID_TYPE_CURRENT, CURRENT_PID_KP, CURRENT_PID_KI, CURRENT_PID_OUT_MIN, CURRENT_PID_OUT_MAX); // 按电流环带宽1000Hz整定
+    pid_init(&pid_id, PID_MODE_PI, CURRENT_PID_KP, CURRENT_PID_KI, 0.0f, CURRENT_PID_OUT_MIN, CURRENT_PID_OUT_MAX, 0U);
+    pid_init(&pid_iq, PID_MODE_PI, CURRENT_PID_KP, CURRENT_PID_KI, 0.0f, CURRENT_PID_OUT_MIN, CURRENT_PID_OUT_MAX, 0U); // 按电流环带宽1000Hz整定
 
     // 初始化 FOC 控制句柄
     foc_init(&foc_current_closed_handle, &pid_id, &pid_iq, NULL);
@@ -111,8 +108,8 @@ void currentClosedDebug_print_info(void)
         }
     }
 
-    float data[13] = {i_dq_temp.d, i_dq_temp.q, speed_temp, angle_el_temp, pll_angle_el_temp, adc_inj_irq_hz_temp, adc_inj_callback_hz_temp,
+    float data[12] = {i_dq_temp.d, i_dq_temp.q, speed_temp, pll_angle_el_temp, adc_inj_irq_hz_temp, adc_inj_callback_hz_temp,
                       v_d_pi_temp, v_q_pi_temp, v_d_ff_temp, v_q_ff_temp, v_d_out_temp, v_q_out_temp};
-    vofa_send(data, 13);
+    vofa_send(data, 12);
 }
 

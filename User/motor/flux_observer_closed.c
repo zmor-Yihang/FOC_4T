@@ -53,7 +53,7 @@ static void fluxObserver_closed_callback(void)
     float speed_encoder = encoder_get_pllSpeed();
 
     // 控制反馈角度与速度：改用观测器输出
-    float angle_el = wrap_pm_pi(fluxObserver_get_angle(&flux_observer) - foc_fluxObserver_handle.angle_offset);
+    float angle_el = wrap_pm_pi(fluxObserver_get_angle(&flux_observer));
     float speed_feedback = fluxObserver_get_speed(&flux_observer);
 
     float angle_observer = angle_el;
@@ -75,16 +75,16 @@ static void fluxObserver_closed_callback(void)
     speed_obs_rpm_temp = speed_observer;
     angle_encoder_temp = angle_encoder;
     angle_observer_temp = angle_observer;
-    flux_angle_temp = wrap_pm_pi(flux_observer.theta_est - foc_fluxObserver_handle.angle_offset);
+    flux_angle_temp = wrap_pm_pi(flux_observer.theta_est);
     flux_linkage_temp = sqrtf(flux_observer.xhat_alpha * flux_observer.xhat_alpha + flux_observer.xhat_beta * flux_observer.xhat_beta);
 }
 
 void fluxObseverClosed_init(float speed_rpm)
 {
     // 初始化电流环与速度环 PID 控制器
-    pid_init(&pid_id, PID_TYPE_CURRENT, 2.02f, 2670.0f, -U_DC / 2.0f, U_DC / 2.0f);
-    pid_init(&pid_iq, PID_TYPE_CURRENT, 2.02f, 2670.0f, -U_DC / 2.0f, U_DC / 2.0f);
-    pid_init(&pid_speed, PID_TYPE_SPEED, 0.004f, 2.5f, -1.0f, 1.0f);
+    pid_init(&pid_id, PID_MODE_PI, FLUX_OBSERVER_CURRENT_PID_KP, FLUX_OBSERVER_CURRENT_PID_KI, 0.0f, -U_DC / 2.0f, U_DC / 2.0f, 0U);
+    pid_init(&pid_iq, PID_MODE_PI, FLUX_OBSERVER_CURRENT_PID_KP, FLUX_OBSERVER_CURRENT_PID_KI, 0.0f, -U_DC / 2.0f, U_DC / 2.0f, 0U);
+    pid_init(&pid_speed, PID_MODE_PI, FLUX_OBSERVER_SPEED_PID_KP, FLUX_OBSERVER_SPEED_PID_KI, 0.0f, FLUX_OBSERVER_SPEED_PID_OUT_MIN, FLUX_OBSERVER_SPEED_PID_OUT_MAX, 1U);
 
     // 初始化 FOC 控制句柄
     foc_init(&foc_fluxObserver_handle, &pid_id, &pid_iq, &pid_speed);

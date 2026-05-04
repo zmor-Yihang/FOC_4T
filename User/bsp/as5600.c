@@ -55,3 +55,17 @@ uint8_t as5600_poll_rawCount(uint16_t *raw_count)
 
     return 0;
 }
+
+/**
+ * @brief 阻塞读取一次原始角度计数
+ * @retval 1: 成功获取到测量值; 0: 读取失败
+ * @note 该接口用于零点对齐这类非实时流程，确保拿到的是实际测量角度，而不是PLL预测角度
+ */
+uint8_t as5600_read_rawCountBlock(uint16_t *raw_count)
+{
+    uint8_t recv_buffer[2] = {0};
+
+    i2c_read_bytesBlock(AS5600_I2C_ADDR, AS5600_REG_RAW_ANGLE_H, recv_buffer, 2);
+    *raw_count = as5600_build_rawCount(recv_buffer);
+    return 1U;
+}

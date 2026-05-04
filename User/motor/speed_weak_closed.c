@@ -12,7 +12,6 @@ static pid_controller_t pid_speed;
 
 // 打印用
 static float speed_rpm_temp = 0.0f;
-static float angle_el_temp = 0.0f;
 static float pll_angle_el_temp = 0.0f;
 static float id_temp = 0.0f;
 static float iq_temp = 0.0f;
@@ -35,7 +34,6 @@ static void speed_weak_closed_callback(void)
 
     // 控制使用PLL估计角度；编码器实测角度只用于调试观察
     float angle_el = encoder_get_pllAngle() - foc_speed_weak_closed_handle.angle_offset;
-    float angle_meas = encoder_get_encoderAngle() - foc_speed_weak_closed_handle.angle_offset;
     float speed_feedback = encoder_get_pllSpeed();
 
     // 获取电流反馈值
@@ -55,7 +53,6 @@ static void speed_weak_closed_callback(void)
     ib_temp = i_abc.b;
     ic_temp = i_abc.c;
     speed_rpm_temp = speed_feedback;
-    angle_el_temp = angle_meas;
     pll_angle_el_temp = angle_el;
 
     // 带弱磁速度闭环
@@ -74,10 +71,10 @@ static void speed_weak_closed_callback(void)
 void speedWeakClosed_init(float speed_rpm)
 {
     // 初始化速度环 PID 控制器
-    pid_init(&pid_id, PID_TYPE_CURRENT, CURRENT_PID_KP, CURRENT_PID_KI, CURRENT_PID_OUT_MIN, CURRENT_PID_OUT_MAX);
-    pid_init(&pid_iq, PID_TYPE_CURRENT, CURRENT_PID_KP, CURRENT_PID_KI, CURRENT_PID_OUT_MIN, CURRENT_PID_OUT_MAX); // 按电流环带宽1000Hz整定
+    pid_init(&pid_id, PID_MODE_PI, CURRENT_PID_KP, CURRENT_PID_KI, 0.0f, CURRENT_PID_OUT_MIN, CURRENT_PID_OUT_MAX, 0U);
+    pid_init(&pid_iq, PID_MODE_PI, CURRENT_PID_KP, CURRENT_PID_KI, 0.0f, CURRENT_PID_OUT_MIN, CURRENT_PID_OUT_MAX, 0U); // 按电流环带宽1000Hz整定
 
-    pid_init(&pid_speed, PID_TYPE_SPEED, SPEED_PID_KP, SPEED_PID_KI, SPEED_PID_OUT_MIN, SPEED_PID_OUT_MAX); // 按 δ = 16 整定的
+    pid_init(&pid_speed, PID_MODE_PI, SPEED_PID_KP, SPEED_PID_KI, 0.0f, SPEED_PID_OUT_MIN, SPEED_PID_OUT_MAX, 1U); // 按 δ = 16 整定的
 
     // 初始化 FOC 控制句柄
     foc_init(&foc_speed_weak_closed_handle, &pid_id, &pid_iq, &pid_speed);
@@ -99,15 +96,6 @@ void speedWeakClosed_init(float speed_rpm)
 
 void speedWeakClosedDebug_print_info(void)
 {
-    // 归一化角度到 [0, 2π) 范围
-    float angle_normalized = fmodf(angle_el_temp, MATH_TWO_PI);
-    if (angle_normalized < 0.0f)
-    {
-        angle_normalized += MATH_TWO_PI;
-    }
-    // 转换为角度 (0-360°)
-    float angle_deg = angle_normalized * 57.2958f;
-
     // PLL估计电角度也归一化并转换到角度制
     float pll_angle_normalized = fmodf(pll_angle_el_temp, MATH_TWO_PI);
     if (pll_angle_normalized < 0.0f)
@@ -116,7 +104,7 @@ void speedWeakClosedDebug_print_info(void)
     }
     float pll_angle_deg = pll_angle_normalized * 57.2958f;
 
-    float data[16] = {speed_rpm_temp, angle_deg, pll_angle_deg, id_temp, iq_temp, ia_temp, ib_temp, ic_temp,
+    float data[15] = {speed_rpm_temp, pll_angle_deg, id_temp, iq_temp, ia_temp, ib_temp, ic_temp,
                       v_d_pi_temp, v_q_pi_temp, v_d_ff_temp, v_q_ff_temp, v_d_out_temp, v_q_out_temp, v_mag_temp, i2c_read_state_temp};
-    vofa_send(data, 16);
+    vofa_send(data, 15);
 }

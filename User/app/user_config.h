@@ -22,12 +22,12 @@
 #define FOC_CURRENT_LOOP_FREQ_HZ         10000.0f // 电流环执行频率(Hz)
 #define FOC_SPEED_LOOP_DIVIDER           10U      // 速度环相对电流环的分频系数
 #define FOC_DECOUPLING_ENABLE            1        // 1:启用前馈解耦 0:关闭前馈解耦
-#define FOC_ELEC_ANGLE_TRIM_RAD          0.0f     // 电角度手动微调量(rad)，正常情况下保持为0，仅在排查固定偏差时临时微调
+#define FOC_ELEC_ANGLE_TRIM_RAD          0.00f     // 电角度手动微调量(rad)，正常情况下保持为0，仅在排查固定偏差时临时微调
 
 // 编码器参数
 #define ENCODER_COUNT_SWAP               0         // 1：启用编码器计数翻转
-#define ENCODER_PLL_KP                   2664.0f   // 编码器速度 PLL 比例增益  200Hz带宽
-#define ENCODER_PLL_KI                   3.56e6f   // 编码器速度 PLL 积分增益
+#define ENCODER_PLL_KP                   1776.0f   // 编码器速度 PLL 比例增益  200Hz带宽
+#define ENCODER_PLL_KI                   1.58e6f   // 编码器速度 PLL 积分增益
 #define ENCODER_PLL_SPEED_LIMIT_RPM      5000.0f   // 编码器 PLL 机械转速限幅(rpm)
 #define ENCODER_PLL_ANGLE_COMP_ENABLE    1         // 1：启用拍延时补偿
 #define ENCODER_PLL_ANGLE_COMP_DELAY_S   1.5e-4f      // 输出补偿延时(s)
@@ -61,6 +61,13 @@
 
 // 无感磁链观测器参数
 #define FLUX_OBSERVER_GAMMA               5.0e7f                           // 观测器非线性增益
+#define FLUX_OBSERVER_CURRENT_PID_KP      5.0f                            // 无感模式电流环PI比例系数
+#define FLUX_OBSERVER_CURRENT_PID_KI      2670.0f                          // 无感模式电流环PI积分系数
+#define FLUX_OBSERVER_SPEED_PID_KP        0.004f                           // 无感模式速度环PI比例系数
+#define FLUX_OBSERVER_SPEED_PID_KI        2.5f                             // 无感模式速度环PI积分系数
+#define FLUX_OBSERVER_SPEED_PID_OUT_MIN   -0.8f                            // 无感模式速度环输出下限(A)
+#define FLUX_OBSERVER_SPEED_PID_OUT_MAX   0.8f                             // 无感模式速度环输出上限(A)
+
 #define FLUX_OBSERVER_TS_S                (1.0 / FOC_CURRENT_LOOP_FREQ_HZ) // 观测器执行周期(s)
 #define FLUX_OBSERVER_PLL_KP              850.0f                           // PLL比例增益
 #define FLUX_OBSERVER_PLL_KI              0.4e6f                           // PLL积分增益

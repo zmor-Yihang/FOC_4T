@@ -1,13 +1,7 @@
 #include "pid.h"
 
-void pid_init(pid_controller_t *pid, pid_type_t type, float kp, float ki, float out_min, float out_max)
+void pid_init(pid_controller_t *pid, pid_mode_t mode, float kp, float ki, float kd, float out_min, float out_max, uint8_t enable_limit)
 {
-    pid_init_mode(pid, type, PID_MODE_PI, kp, ki, 0.0f, out_min, out_max);
-}
-
-void pid_init_mode(pid_controller_t *pid, pid_type_t type, pid_mode_t mode, float kp, float ki, float kd, float out_min, float out_max)
-{
-    pid->type = type;
     pid->mode = mode;
     pid->kp = kp;
     pid->ki = ki;
@@ -23,7 +17,7 @@ void pid_init_mode(pid_controller_t *pid, pid_type_t type, pid_mode_t mode, floa
     pid->out = 0.0f;
     pid->out_min = out_min;
     pid->out_max = out_max;
-    pid->enable_limit = (type == PID_TYPE_CURRENT) ? 0U : 1U;
+    pid->enable_limit = (enable_limit != 0U) ? 1U : 0U;
 
     // kt = ki，Microchip AN1078 笔记的取法
     pid->kt = ki;

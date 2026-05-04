@@ -1,4 +1,56 @@
 #include "speed_closed.h"
+#include "../adv_alg/cogging_comp_table.h"
+
+static float speed_closed_get_cogging_comp_iq(uint16_t raw_count)
+{
+    const uint16_t *raw_table = g_cogging_comp_raw_count_table;
+    const float *iq_table = g_cogging_comp_iq_table;
+
+    if (COGGING_COMP_TABLE_SIZE == 0U)
+    {
+        return 0.0f;
+    }
+
+    if (COGGING_COMP_TABLE_SIZE == 1U)
+    {
+        return iq_table[0];
+    }
+
+    /* raw_table 必须按编码器原始线数从小到大排列；在相邻两点之间做线性插值 */
+    for (uint16_t i = 0U; i < (uint16_t)(COGGING_COMP_TABLE_SIZE - 1U); ++i)
+    {
+        uint16_t raw_l = raw_table[i];
+        uint16_t raw_r = raw_table[i + 1U];
+
+        if ((raw_count >= raw_l) && (raw_count < raw_r))
+        {
+            float span = (float)(raw_r - raw_l);
+            float ratio = (span > 0.0f) ? ((float)(raw_count - raw_l) / span) : 0.0f;
+            return iq_table[i] + (iq_table[i + 1U] - iq_table[i]) * ratio;
+        }
+    }
+
+    /* 处理 0~4095 的环形边界：最后一点到第一点跨 ENCODER_CPR */
+    {
+        uint16_t raw_l = raw_table[COGGING_COMP_TABLE_SIZE - 1U];
+        uint16_t raw_r = (uint16_t)(raw_table[0] + ENCODER_CPR);
+
+        if ((raw_count >= raw_l) || (raw_count < raw_table[0]))
+        {
+            uint16_t raw_count_ext = raw_count;
+            if (raw_count_ext < raw_table[0])
+            {
+                raw_count_ext = (uint16_t)(raw_count_ext + ENCODER_CPR);
+            }
+
+            float span = (float)(raw_r - raw_l);
+            float ratio = (span > 0.0f) ? ((float)(raw_count_ext - raw_l) / span) : 0.0f;
+            return iq_table[COGGING_COMP_TABLE_SIZE - 1U] + (iq_table[0] - iq_table[COGGING_COMP_TABLE_SIZE - 1U]) * ratio;
+        }
+    }
+
+    return 0.0f;
+}
 
 static foc_t foc_speed_closed_handle;
 
@@ -9,7 +61,6 @@ static pid_controller_t pid_speed;
 
 // 打印用
 static float speed_rpm_temp = 0.0f;
-static float angle_el_temp = 0.0f;
 static float pll_angle_el_temp = 0.0f;
 static float id_temp = 0.0f;
 static float iq_temp = 0.0f;
@@ -25,6 +76,8 @@ static float v_q_ff_temp = 0.0f;
 static float v_d_out_temp = 0.0f;
 static float v_q_out_temp = 0.0f;
 static float v_mag_temp = 0.0f;
+static float speed_loop_iq_temp = 0.0f;
+static float cogging_comp_iq_temp = 0.0f;
 
 static void speed_closed_callback(void)
 {
@@ -33,7 +86,6 @@ static void speed_closed_callback(void)
 
     // 控制使用PLL估计角度；编码器实测角度只用于调试观察
     float angle_el = encoder_get_pllAngle() - foc_speed_closed_handle.angle_offset;
-    float angle_meas = encoder_get_encoderAngle() - foc_speed_closed_handle.angle_offset;
     float speed_feedback = encoder_get_pllSpeed();
 
     // 获取电流反馈值
@@ -46,6 +98,34 @@ static void speed_closed_callback(void)
     // Park 变换
     dq_t i_dq = park_transform(i_alphabeta, angle_el);
 
+    // 速度闭环
+    static uint8_t speed_loop_div = 0;
+    if (++speed_loop_div >= FOC_SPEED_LOOP_DIVIDER)
+    {
+        speed_loop_div = 0;
+        float speed_loop_dt = FOC_CURRENT_LOOP_DT_S * (float)FOC_SPEED_LOOP_DIVIDER;
+        speed_loop_iq_temp = pid_calculate(foc_speed_closed_handle.pid_speed, foc_speed_closed_handle.target_speed, speed_feedback, speed_loop_dt);
+    }
+
+    foc_speed_closed_handle.target_id = 0.0f;
+
+    /* 齿槽转矩补偿：根据编码器原始计数插值出对应的 q 轴补偿电流 */
+    uint16_t raw_count = encoder_get_rawCount();
+    cogging_comp_iq_temp = speed_closed_get_cogging_comp_iq(raw_count);
+    foc_speed_closed_handle.target_iq = speed_loop_iq_temp + cogging_comp_iq_temp;
+
+    if (foc_speed_closed_handle.target_iq > SPEED_PID_OUT_MAX)
+    {
+        foc_speed_closed_handle.target_iq = SPEED_PID_OUT_MAX;
+    }
+    else if (foc_speed_closed_handle.target_iq < SPEED_PID_OUT_MIN)
+    {
+        foc_speed_closed_handle.target_iq = SPEED_PID_OUT_MIN;
+    }
+
+    // 复用电流闭环
+    loopControl_run_currentLoop(&foc_speed_closed_handle, i_dq, angle_el, speed_feedback);
+
     // 保存电流值用于打印
     id_temp = i_dq.d;
     iq_temp = i_dq.q;
@@ -53,12 +133,7 @@ static void speed_closed_callback(void)
     ib_temp = i_abc.b;
     ic_temp = i_abc.c;
     speed_rpm_temp = speed_feedback;
-    angle_el_temp = angle_meas;
     pll_angle_el_temp = angle_el;
-
-    // 速度闭环
-    loopControl_run_speedLoop(&foc_speed_closed_handle, i_dq, angle_el, speed_feedback, FOC_SPEED_LOOP_DIVIDER);
-
     target_iq_temp = foc_speed_closed_handle.target_iq;
     target_id_temp = foc_speed_closed_handle.target_id;
     v_d_pi_temp = foc_speed_closed_handle.v_d_pi;
@@ -73,10 +148,10 @@ static void speed_closed_callback(void)
 void speedClosed_init(float speed_rpm)
 {
     // 初始化速度环 PID 控制器
-    pid_init(&pid_id, PID_TYPE_CURRENT, CURRENT_PID_KP, CURRENT_PID_KI, CURRENT_PID_OUT_MIN, CURRENT_PID_OUT_MAX);
-    pid_init(&pid_iq, PID_TYPE_CURRENT, CURRENT_PID_KP, CURRENT_PID_KI, CURRENT_PID_OUT_MIN, CURRENT_PID_OUT_MAX); // 按电流环带宽1000Hz整定
+    pid_init(&pid_id, PID_MODE_PI, CURRENT_PID_KP, CURRENT_PID_KI, 0.0f, CURRENT_PID_OUT_MIN, CURRENT_PID_OUT_MAX, 0U);
+    pid_init(&pid_iq, PID_MODE_PI, CURRENT_PID_KP, CURRENT_PID_KI, 0.0f, CURRENT_PID_OUT_MIN, CURRENT_PID_OUT_MAX, 0U); // 按电流环带宽1000Hz整定
 
-    pid_init(&pid_speed, PID_TYPE_SPEED, SPEED_PID_KP, SPEED_PID_KI, SPEED_PID_OUT_MIN, SPEED_PID_OUT_MAX); // 按 δ = 16 整定的
+    pid_init(&pid_speed, PID_MODE_PI, SPEED_PID_KP, SPEED_PID_KI, 0.0f, SPEED_PID_OUT_MIN, SPEED_PID_OUT_MAX, 1U); // 按 δ = 16 整定的
 
     // 初始化 FOC 控制句柄
     foc_init(&foc_speed_closed_handle, &pid_id, &pid_iq, &pid_speed);
@@ -84,6 +159,8 @@ void speedClosed_init(float speed_rpm)
     // 设置目标速度
     foc_set_id(&foc_speed_closed_handle, 0.0f);
     foc_set_speed(&foc_speed_closed_handle, speed_rpm);
+    speed_loop_iq_temp = 0.0f;
+    cogging_comp_iq_temp = 0.0f;
 
     // 零点对齐
     zero_alignment(&foc_speed_closed_handle);
@@ -94,15 +171,6 @@ void speedClosed_init(float speed_rpm)
 
 void speedClosedDebug_print_info(void)
 {
-    // 归一化角度到 [0, 2π) 范围
-    float angle_normalized = fmodf(angle_el_temp, MATH_TWO_PI);
-    if (angle_normalized < 0.0f)
-    {
-        angle_normalized += MATH_TWO_PI;
-    }
-    // 转换为角度 (0-360°)
-    float angle_deg = angle_normalized * 57.2958f;
-
     // PLL估计电角度也归一化并转换到角度制
     float pll_angle_normalized = fmodf(pll_angle_el_temp, MATH_TWO_PI);
     if (pll_angle_normalized < 0.0f)
@@ -111,7 +179,7 @@ void speedClosedDebug_print_info(void)
     }
     float pll_angle_deg = pll_angle_normalized * 57.2958f;
 
-    float data[17] = {speed_rpm_temp, angle_deg, pll_angle_deg, id_temp, iq_temp, ia_temp, ib_temp, ic_temp,
+    float data[16] = {speed_rpm_temp, pll_angle_deg, id_temp, iq_temp, ia_temp, ib_temp, ic_temp,
                       target_iq_temp, target_id_temp, v_d_pi_temp, v_q_pi_temp, v_d_ff_temp, v_q_ff_temp, v_d_out_temp, v_q_out_temp, v_mag_temp};
-    vofa_send(data, 17);
+    vofa_send(data, 16);
 }

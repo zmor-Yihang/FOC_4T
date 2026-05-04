@@ -18,7 +18,9 @@
 #include "../motor/speed_weak_closed.h"
 #include "../motor/flux_observer_closed.h"
 #include "../motor/position_closed.h"
+#include "../motor/cogging_calibration_mode.h"
 
+#include "../test/as5600_test.h"
 
 
 

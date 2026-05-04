@@ -3,6 +3,7 @@
 // 编码器速度计算相关静态数据
 static float current_elec_angle = 0.0f; // 当前电角度，由编码器获得（结合预测）
 static float current_mech_angle = 0.0f; // 当前机械单圈角度，用于单圈位置反馈
+static uint16_t current_raw_count = 0U; // 当前编码器原始计数(0~4095)
 static float mech_position = 0.0f;      // 当前机械多圈位置，用于多圈位置反馈
 static float last_mech_angle = 0.0f;    // 上一次机械单圈角度(rad)
 static uint8_t mech_position_inited = 0U;
@@ -52,6 +53,7 @@ static void encoder_get_currentElectricalAngle(void)
 
     if (as5600_poll_rawCount(&raw_count) != 0U)
     {
+        current_raw_count = raw_count;
         current_mech_angle = encoder_convert_countToMechanicalAngle(raw_count);
         current_elec_angle = current_mech_angle * MOTOR_POLE_PAIRS;
     }
@@ -98,15 +100,66 @@ void encoder_update(void)
 }
 
 /**
- * @brief 获取编码器和预测的电角度[0, 2π)：rad
+ * @brief 阻塞获取机械单圈角度，确保返回的是测量值
+ * @retval 1: 成功读取测量角度; 0: 读取失败
  */
-float encoder_get_encoderAngle(void)
+uint8_t encoder_get_mechanicalAngleBlock(float *mech_angle_rad)
 {
-#if (ENCODER_PLL_ANGLE_COMP_ENABLE == 1)
-    return angleUtils_compensate_delay(current_elec_angle, pll_speed_rad_s, ENCODER_PLL_ANGLE_COMP_DELAY_S);
-#else
+    uint16_t raw_count = 0U;
+
+    if (mech_angle_rad == NULL)
+    {
+        return 0U;
+    }
+
+    if (as5600_read_rawCountBlock(&raw_count) == 0U)
+    {
+        return 0U;
+    }
+
+    current_raw_count = raw_count;
+    current_mech_angle = encoder_convert_countToMechanicalAngle(raw_count);
+    *mech_angle_rad = current_mech_angle;
+    return 1U;
+}
+
+/**
+ * @brief 获取当前编码器原始计数
+ * @return AS5600原始计数，范围0~4095
+ */
+uint16_t encoder_get_rawCount(void)
+{
+    return current_raw_count;
+}
+
+/**
+ * @brief 阻塞读取编码器原始计数，确保返回的是测量值
+ * @retval 1: 成功读取; 0: 读取失败
+ */
+uint8_t encoder_get_rawCountBlock(uint16_t *raw_count)
+{
+    if (raw_count == NULL)
+    {
+        return 0U;
+    }
+
+    if (as5600_read_rawCountBlock(raw_count) == 0U)
+    {
+        return 0U;
+    }
+
+    current_raw_count = *raw_count;
+    current_mech_angle = encoder_convert_countToMechanicalAngle(current_raw_count);
+    return 1U;
+}
+
+/**
+ * @brief 获取零点对齐用电角度
+ * @note 仅用于 zero_alignment() 标定零点偏移，所以这里不需要进行延迟补偿
+ */
+float encoder_get_alignmentAngle(void)
+{
     return current_elec_angle;
-#endif /* ENCODER_PLL_ANGLE_COMP_ENABLE */
 }
 
 /**
